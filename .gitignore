@@ -1,14 +1,21 @@
-invoices/
-.env
-token.json
-credentials.json
 __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
 dist/
-.DS_Store
-.claude
-output/
 .venv
+
+.DS_Store
+.env
+
+# Claude
+plans/
+.claude
+
+# Project directories
+invoices/
+output/
+
+
+
