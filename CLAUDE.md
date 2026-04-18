@@ -6,7 +6,7 @@ A FastAPI service that collects monthly invoices from Gmail using a bank stateme
 
 ## Stack
 - Python 3.11+
-- FastAPI, LangChain, langchain-anthropic, langchain-community
+- FastAPI, LangChain, langchain-aws (AWS Bedrock via ChatBedrockConverse)
 - pdfplumber (text PDFs), openpyxl, pydantic-settings
 - Linting: ruff
 
