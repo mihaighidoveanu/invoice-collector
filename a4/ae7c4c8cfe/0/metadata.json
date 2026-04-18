@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "a4ae7c4c8cfe",
+  "session_id": "2c393694-0f71-485e-8241-c33f7733cdcd",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-18T19:44:07.998888Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "agent/pipeline.py",
+    "agent/statement_parser.py",
+    "tests/unit/test_statement_parser.py"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "c9ce141d13ea",
+  "token_usage": {
+    "input_tokens": 52,
+    "cache_creation_tokens": 12999,
+    "cache_read_tokens": 282555,
+    "output_tokens": 1447,
+    "api_call_count": 8
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-18T19:44:07.988248Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 12,
+    "total_committed": 0,
+    "total_lines_changed": 12,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 11,
+      "user_lines_removed": 14,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".env.example": 1,
+        "agent/gmail_tools.py": 1,
+        "agent/pipeline.py": 1,
+        "agent/statement_parser.py": 4,
+        "secrets/gmail.json": 1,
+        "tests/unit/test_statement_parser.py": 3
+      },
+      "user_removed_per_file": {
+        ".env.example": 1,
+        "agent/gmail_tools.py": 1,
+        "agent/pipeline.py": 2,
+        "agent/statement_parser.py": 7,
+        "tests/unit/test_statement_parser.py": 3
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 11,
+      "agent_lines_removed": 14
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 11,
+      "agent_lines_removed": 14
+    }
+  ]
+}
