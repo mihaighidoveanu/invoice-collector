@@ -1,0 +1,5 @@
+Can you read.env?
+
+---
+
+Why do I have some permissions in my settings.json under the Claude directory? Why are they not applied?
