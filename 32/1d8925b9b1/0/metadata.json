@@ -1,0 +1,100 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "321d8925b9b1",
+  "session_id": "0bb1c60c-2d21-43ff-9f42-ce65f3786621",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-18T10:01:10.249251Z",
+  "branch": "master",
+  "checkpoints_count": 3,
+  "files_touched": [
+    ".gitignore",
+    "README.md",
+    "agent/attachment_reader.py",
+    "agent/pipeline.py",
+    "agent/report_builder.py",
+    "models.py",
+    "tests/test_attachment_reader.py",
+    "tests/test_pipeline.py"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "f4e40941bc96",
+  "token_usage": {
+    "input_tokens": 1126,
+    "cache_creation_tokens": 265254,
+    "cache_read_tokens": 4976636,
+    "output_tokens": 39533,
+    "api_call_count": 94
+  },
+  "session_metrics": {
+    "turn_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-18T10:01:10.216204Z",
+    "agent_lines": 94,
+    "agent_removed": 0,
+    "human_added": 387,
+    "human_modified": 19,
+    "human_removed": 0,
+    "total_committed": 483,
+    "total_lines_changed": 500,
+    "agent_percentage": 18.8,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 2174,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".env.example": 14,
+        ".gitignore": 13,
+        "CLAUDE.md": 4,
+        "agent/attachment_reader.py": 133,
+        "agent/gmail_tools.py": 207,
+        "agent/pipeline.py": 271,
+        "agent/report_builder.py": 82,
+        "agent/rule_builder.py": 43,
+        "agent/statement_parser.py": 145,
+        "config.py": 29,
+        "main.py": 104,
+        "models.py": 64,
+        "pyproject.toml": 11,
+        "requirements.txt": 17,
+        "tests/test_attachment_reader.py": 123,
+        "tests/test_gmail_tools.py": 196,
+        "tests/test_pipeline.py": 195,
+        "tests/test_report_builder.py": 115,
+        "tests/test_rule_builder.py": 129,
+        "tests/test_statement_parser.py": 157,
+        "tools/export_excel.py": 122
+      },
+      "user_removed_per_file": {
+        ".gitignore": 2
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2154,
+      "agent_lines_removed": 2
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2154,
+      "agent_lines_removed": 2
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2255,
+      "agent_lines_removed": 2
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+Implement the plan.
+
+---
+
+yes
+
+---
+
+all is well now. continue
+
+---
+
+continue
+
+---
+
+how to setup and run this project?
+
+---
+
+update Readme with these instructions
