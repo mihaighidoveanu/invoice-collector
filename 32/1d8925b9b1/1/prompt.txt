@@ -1,0 +1,21 @@
+evaluate current workspace against Claude.md requirements. Is everything that is needed covered? Is anything extra or unnecessary? Is anything which can be improved?
+
+---
+
+I would like to do this issue in parallel in different sessions in Claude Code. How to do that?
+
+---
+
+I want the current plan to be reused between the three worktrees. Will that be possible?
+
+---
+
+Ok, and can you launch this worktrees yourself from the From this session, or do I have to do it manually?
+
+---
+
+Okay, I want you to write this plan under the plans directory.
+
+---
+
+Write this session's current plan into the plans directory under the current workspace. This is where I want plans to be stored so other Claude Code sessions could access this plan.

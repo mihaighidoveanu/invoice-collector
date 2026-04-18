@@ -1,0 +1,109 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "321d8925b9b1",
+  "session_id": "75edb249-2935-4288-a1b7-c41e0d4cc8a9",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-18T10:01:10.461198Z",
+  "branch": "master",
+  "checkpoints_count": 5,
+  "files_touched": [
+    ".gitignore",
+    "README.md",
+    "plans/workspace-evaluation.md"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "db9fe9ece826",
+  "token_usage": {
+    "input_tokens": 35,
+    "cache_creation_tokens": 93783,
+    "cache_read_tokens": 751066,
+    "output_tokens": 13237,
+    "api_call_count": 19
+  },
+  "session_metrics": {
+    "turn_count": 5
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-18T10:01:10.444692Z",
+    "agent_lines": 122,
+    "agent_removed": 0,
+    "human_added": 278,
+    "human_modified": 2,
+    "human_removed": 0,
+    "total_committed": 402,
+    "total_lines_changed": 402,
+    "agent_percentage": 30.34825870646766,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 2251,
+      "user_lines_removed": 59,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".env.example": 14,
+        ".gitignore": 13,
+        "README.md": 101,
+        "agent/attachment_reader.py": 134,
+        "agent/gmail_tools.py": 202,
+        "agent/pipeline.py": 269,
+        "agent/report_builder.py": 82,
+        "agent/rule_builder.py": 43,
+        "agent/statement_parser.py": 145,
+        "config.py": 29,
+        "main.py": 104,
+        "models.py": 64,
+        "pyproject.toml": 11,
+        "requirements.txt": 17,
+        "tests/test_attachment_reader.py": 122,
+        "tests/test_gmail_tools.py": 192,
+        "tests/test_pipeline.py": 192,
+        "tests/test_report_builder.py": 111,
+        "tests/test_rule_builder.py": 128,
+        "tests/test_statement_parser.py": 156,
+        "tools/export_excel.py": 122
+      },
+      "user_removed_per_file": {
+        ".gitignore": 2,
+        "CLAUDE.md": 57
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2251,
+      "agent_lines_removed": 59
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2251,
+      "agent_lines_removed": 59
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2251,
+      "agent_lines_removed": 59
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 265,
+      "user_lines_removed": 265,
+      "agent_lines_added": 2251,
+      "agent_lines_removed": 59,
+      "user_added_per_file": {
+        "plans/initial-plan-14-04-2026.md": 265
+      },
+      "user_removed_per_file": {
+        "claude-workbench/plans/initial-plan-14-04-2026.md": 265
+      }
+    }
+  ]
+}

@@ -3,7 +3,7 @@
   "checkpoint_id": "321d8925b9b1",
   "strategy": "manual-commit",
   "branch": "master",
-  "checkpoints_count": 3,
+  "checkpoints_count": 8,
   "files_touched": [
     ".gitignore",
     "README.md",
@@ -11,6 +11,7 @@
     "agent/pipeline.py",
     "agent/report_builder.py",
     "models.py",
+    "plans/workspace-evaluation.md",
     "tests/test_attachment_reader.py",
     "tests/test_pipeline.py"
   ],
@@ -20,13 +21,19 @@
       "transcript": "/32/1d8925b9b1/0/full.jsonl",
       "content_hash": "/32/1d8925b9b1/0/content_hash.txt",
       "prompt": "/32/1d8925b9b1/0/prompt.txt"
+    },
+    {
+      "metadata": "/32/1d8925b9b1/1/metadata.json",
+      "transcript": "/32/1d8925b9b1/1/full.jsonl",
+      "content_hash": "/32/1d8925b9b1/1/content_hash.txt",
+      "prompt": "/32/1d8925b9b1/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 1126,
-    "cache_creation_tokens": 265254,
-    "cache_read_tokens": 4976636,
-    "output_tokens": 39533,
-    "api_call_count": 94
+    "input_tokens": 1161,
+    "cache_creation_tokens": 359037,
+    "cache_read_tokens": 5727702,
+    "output_tokens": 52770,
+    "api_call_count": 113
   }
 }
