@@ -1,0 +1,17 @@
+/test-llm
+
+---
+
+Check yourself using the AWS CLI
+
+---
+
+How can it be a quota issue? I have never used this model today.
+
+---
+
+Yes
+
+---
+
+How do you know that the.env has the correct full ARN?
