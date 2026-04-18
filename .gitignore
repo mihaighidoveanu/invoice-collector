@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -6,8 +7,14 @@ __pycache__/
 dist/
 .venv
 
+# OS
 .DS_Store
 .env
+
+# Gmail
+client_secret_*.json
+credentials.json
+token.json
 
 # Claude
 plans/
@@ -16,6 +23,7 @@ plans/
 # Project directories
 invoices/
 output/
+input/
 
 
 
