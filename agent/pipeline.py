@@ -128,8 +128,7 @@ def run_pipeline(
     """
     # --- Phase 1: parse statement ---
     transactions, ambiguous = parse_statement(
-        bank_statement_path,
-        target_month or "",
+        bank_statement_path
     )
 
     if not transactions:

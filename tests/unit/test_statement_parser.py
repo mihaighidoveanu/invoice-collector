@@ -121,7 +121,7 @@ def test_parse_statement_returns_transactions(mock_build_llm, mock_extract_text)
     mock_llm.invoke.return_value = MagicMock(content=SAMPLE_LLM_RESPONSE)
     mock_build_llm.return_value = mock_llm
 
-    transactions, ambiguous = parse_statement(Path("dummy.pdf"), "2025-03")
+    transactions, ambiguous = parse_statement(Path("dummy.pdf"))
 
     assert len(transactions) == 5
     assert len(ambiguous) == 1
@@ -136,7 +136,7 @@ def test_parse_statement_llm_failure_returns_empty(mock_build_llm, mock_extract_
     mock_llm.invoke.side_effect = RuntimeError("API error")
     mock_build_llm.return_value = mock_llm
 
-    transactions, ambiguous = parse_statement(Path("dummy.pdf"), "2025-03")
+    transactions, ambiguous = parse_statement(Path("dummy.pdf"))
 
     assert transactions == []
     assert ambiguous == []
@@ -150,7 +150,7 @@ def test_parse_statement_malformed_json_returns_empty(mock_build_llm, mock_extra
     mock_llm.invoke.return_value = MagicMock(content="not valid json {{{")
     mock_build_llm.return_value = mock_llm
 
-    transactions, ambiguous = parse_statement(Path("dummy.pdf"), "2025-03")
+    transactions, ambiguous = parse_statement(Path("dummy.pdf"))
 
     assert transactions == []
     assert ambiguous == []

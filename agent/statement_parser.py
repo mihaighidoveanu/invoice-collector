@@ -41,7 +41,6 @@ and return a JSON array. Each element must have:
   - "ambiguous": true if the vendor name normalization was uncertain, else false
   - "confidence_note": brief note when ambiguous is true, else ""
 
-Only include transactions from {target_month} (YYYY-MM).
 Return ONLY the JSON array, no prose.
 
 Bank statement text:
@@ -49,8 +48,8 @@ Bank statement text:
 """
 
 
-def _call_llm(text: str, target_month: str, llm: ChatBedrockConverse) -> str:
-    prompt = _PARSE_PROMPT.format(target_month=target_month, text=text)
+def _call_llm(text: str, llm: ChatBedrockConverse) -> str:
+    prompt = _PARSE_PROMPT.format(text=text)
     response = llm.invoke(prompt)
     return str(response.content)
 
@@ -101,14 +100,12 @@ def _log_normalizations(transactions: list[Transaction], ambiguous_set: set[str]
 
 
 def parse_statement(
-    pdf_path: Path,
-    target_month: str,
+    pdf_path: Path
 ) -> tuple[list[Transaction], list[AmbiguousNormalization]]:
     """Parse bank statement PDF and return transactions for the target month.
 
     Args:
         pdf_path: Path to the bank statement PDF.
-        target_month: Month filter in YYYY-MM format.
 
     Returns:
         Tuple of (transactions, ambiguous_normalizations).
@@ -125,7 +122,7 @@ def parse_statement(
         reraise=False,
     )
     def _call_with_retry() -> str:
-        return _call_llm(text, target_month, llm)
+        return _call_llm(text, llm)
 
     try:
         raw = _call_with_retry()
