@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "e6f6378bdbc1",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".env.example",
+    "CLAUDE.md",
+    "agent/attachment_reader.py",
+    "agent/statement_parser.py",
+    "config.py",
+    "requirements.txt"
+  ],
+  "sessions": [
+    {
+      "metadata": "/e6/f6378bdbc1/0/metadata.json",
+      "transcript": "/e6/f6378bdbc1/0/full.jsonl",
+      "content_hash": "/e6/f6378bdbc1/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 152,
+    "cache_creation_tokens": 106036,
+    "cache_read_tokens": 2749939,
+    "output_tokens": 33283,
+    "api_call_count": 56
+  }
+}
