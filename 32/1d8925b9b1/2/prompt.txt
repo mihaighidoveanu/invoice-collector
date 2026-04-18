@@ -1,0 +1,5 @@
+do you have access to my user plans?
+
+---
+
+I am talking about plans under the.claude directory on this file system in my user.claude directory, not the one in the current project.
