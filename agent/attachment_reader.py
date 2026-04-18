@@ -10,7 +10,7 @@ from datetime import date
 from pathlib import Path
 
 import pdfplumber
-from langchain_anthropic import ChatAnthropic
+from langchain_aws import ChatBedrockConverse
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from config import settings
@@ -37,10 +37,10 @@ PDF text:
 """
 
 
-def _build_llm() -> ChatAnthropic:
-    return ChatAnthropic(
+def _build_llm() -> ChatBedrockConverse:
+    return ChatBedrockConverse(
         model=settings.llm_model_name,
-        api_key=settings.anthropic_api_key,
+        region_name=settings.aws_region,
     )
 
 
@@ -54,7 +54,7 @@ def _extract_text(pdf_path: Path) -> str:
     return "\n".join(text_parts)
 
 
-def _call_llm(text: str, llm: ChatAnthropic) -> str:
+def _call_llm(text: str, llm: ChatBedrockConverse) -> str:
     prompt = _INVOICE_PROMPT.format(text=text)
     response = llm.invoke(prompt)
     return str(response.content)

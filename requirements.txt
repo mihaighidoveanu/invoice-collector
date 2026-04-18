@@ -4,7 +4,7 @@ python-multipart==0.0.9
 pydantic==2.7.4
 pydantic-settings==2.3.4
 langchain==0.2.11
-langchain-anthropic==0.1.20
+langchain-aws==0.1.17
 pdfplumber==0.11.2
 openpyxl==3.1.5
 google-api-python-client==2.134.0

@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     # LLM
-    anthropic_api_key: str = ""
-    llm_model_name: str = "claude-sonnet-4-6"
+    aws_region: str = "us-east-1"
+    llm_model_name: str = "amazon.nova-micro-v1:0"
     llm_max_retries: int = 3
     llm_retry_wait_min: float = 1.0
     llm_retry_wait_max: float = 10.0
