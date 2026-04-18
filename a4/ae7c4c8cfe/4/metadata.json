@@ -1,0 +1,72 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "a4ae7c4c8cfe",
+  "session_id": "a886d1f0-803d-4550-b2da-bf71a9591243",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-18T19:44:08.291342Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "agent/pipeline.py",
+    "agent/statement_parser.py",
+    "tests/unit/test_statement_parser.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-4-6",
+  "turn_id": "d412fc4248de",
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 27939,
+    "cache_read_tokens": 51697,
+    "output_tokens": 363,
+    "api_call_count": 4
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-18T19:44:08.28679Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 12,
+    "total_committed": 0,
+    "total_lines_changed": 12,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 13,
+      "user_lines_removed": 16,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".env.example": 1,
+        "agent/gmail_tools.py": 1,
+        "agent/pipeline.py": 1,
+        "agent/statement_parser.py": 4,
+        "config.py": 2,
+        "secrets/gmail.json": 1,
+        "tests/unit/test_statement_parser.py": 3
+      },
+      "user_removed_per_file": {
+        ".env.example": 1,
+        "agent/gmail_tools.py": 1,
+        "agent/pipeline.py": 2,
+        "agent/statement_parser.py": 7,
+        "config.py": 2,
+        "tests/unit/test_statement_parser.py": 3
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 13,
+      "agent_lines_removed": 16
+    }
+  ]
+}
