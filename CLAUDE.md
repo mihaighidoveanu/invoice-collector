@@ -33,9 +33,11 @@ For decisions that impact user experience, project cost, or performance, escalat
 - Before adding any LLM call not already in `PLAN.md`, stop and confirm with the user
 
 ## Testing
-- Every module has a corresponding test file in `tests/`
-- LLM and Gmail API calls are always mocked in tests — no real credentials required
-- Run `pytest tests/ -v` after completing each phase
+- Unit tests in `tests/unit/` — LLM and Gmail API always mocked, no credentials required
+- Integration tests in `tests/integration/` — real API calls, requires valid credentials
+- Run unit tests after each phase: `pytest tests/unit/ -v`
+- Run integration tests to verify connectivity: `pytest tests/integration/ -v`
+- Skip integration tests in CI/CD: `pytest tests/unit/ -v`
 
 ## Evaluations
 - Evaluations are tests on real data on golden datasets
