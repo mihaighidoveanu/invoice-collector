@@ -11,11 +11,6 @@ dist/
 .DS_Store
 .env
 
-# Gmail
-client_secret_*.json
-credentials.json
-token.json
-
 # Claude
 plans/
 .claude
@@ -24,6 +19,7 @@ plans/
 invoices/
 output/
 input/
+secrets/
 
 
 
