@@ -1,0 +1,12 @@
+Make sure that the linter reflects the current state of the codebase.
+
+---
+
+Make sure that the Readme reflects the current state of the code base.
+
+---
+
+Note about the kind of tests that you can run:
+- You can run unit tests.
+- You can run integration tests.
+- You can add real tests.

@@ -1,0 +1,102 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "72b7e97669c5",
+  "session_id": "2e59a1a2-bc2f-4a2a-b65d-d8debc2bc740",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-19T18:56:40.128513Z",
+  "branch": "temp/anthropic-direct",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "agent/pipeline.py",
+    "agent/statement_parser.py",
+    "main.py",
+    "tests/real/conftest.py"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "f75c1bda4806",
+  "token_usage": {
+    "input_tokens": 376,
+    "cache_creation_tokens": 43945,
+    "cache_read_tokens": 649138,
+    "output_tokens": 6090,
+    "api_call_count": 25
+  },
+  "session_metrics": {
+    "turn_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-19T18:56:40.114942Z",
+    "agent_lines": 152,
+    "agent_removed": 55,
+    "human_added": 9,
+    "human_modified": 25,
+    "human_removed": 0,
+    "total_committed": 186,
+    "total_lines_changed": 343,
+    "agent_percentage": 60.34985422740525,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 541,
+      "user_lines_removed": 20,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "agent/gmail_tools.py": 8,
+        "agent/pipeline.py": 38,
+        "agent/run_artifacts.py": 35,
+        "agent/statement_parser.py": 3,
+        "cli.py": 55,
+        "config.py": 1,
+        "main.py": 26,
+        "tests/real/conftest.py": 69,
+        "tests/real/test_real_build_rules.py": 40,
+        "tests/real/test_real_fetch_emails.py": 49,
+        "tests/real/test_real_match.py": 79,
+        "tests/real/test_real_parse.py": 43,
+        "tests/real/test_real_pipeline.py": 46,
+        "tests/real/test_real_read_attachments.py": 49
+      },
+      "user_removed_per_file": {
+        "agent/gmail_tools.py": 2,
+        "agent/statement_parser.py": 2,
+        "main.py": 16
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 4,
+      "user_lines_removed": 9,
+      "agent_lines_added": 546,
+      "agent_lines_removed": 20,
+      "user_added_per_file": {
+        "agent/run_artifacts.py": 1,
+        "main.py": 2,
+        "tests/real/conftest.py": 1
+      },
+      "user_removed_per_file": {
+        "agent/run_artifacts.py": 3,
+        "main.py": 5,
+        "tests/real/conftest.py": 1
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 2,
+      "user_lines_removed": 4,
+      "agent_lines_added": 563,
+      "agent_lines_removed": 56,
+      "user_added_per_file": {
+        "agent/run_artifacts.py": 1,
+        "tests/real/conftest.py": 1
+      },
+      "user_removed_per_file": {
+        "agent/run_artifacts.py": 3,
+        "tests/real/conftest.py": 1
+      }
+    }
+  ]
+}
