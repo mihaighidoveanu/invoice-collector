@@ -1,0 +1,25 @@
+/run-pipeline
+
+---
+
+/run-pipeline /Users/mihai/Desktop/SRL/initiative/invoice-collector/input/0_Extrase_RO73BTRLRONCRT0CR2266601_2026-01-01_2026-01-31_CALEIDOSCOP_PRIME_BUZZ_S_R_L.PDF
+
+---
+
+continue
+
+---
+
+i restarted it.
+
+---
+
+rerun the command
+
+---
+
+run it outside of sandbox if necessary
+
+---
+
+I have emails with attachments
