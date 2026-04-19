@@ -1,0 +1,13 @@
+/test-gmail
+
+---
+
+/test-gmail
+
+---
+
+how do you know my path in .env has a typo?
+
+---
+
+/test-gmail
