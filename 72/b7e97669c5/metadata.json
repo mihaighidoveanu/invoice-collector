@@ -3,12 +3,21 @@
   "checkpoint_id": "72b7e97669c5",
   "strategy": "manual-commit",
   "branch": "temp/anthropic-direct",
-  "checkpoints_count": 8,
+  "checkpoints_count": 9,
   "files_touched": [
     "agent/pipeline.py",
+    "agent/report_builder.py",
     "agent/statement_parser.py",
+    "cli.py",
     "main.py",
-    "tests/real/conftest.py"
+    "models.py",
+    "tests/real/conftest.py",
+    "tests/real/test_real_parse.py",
+    "tests/unit/test_pipeline.py",
+    "tests/unit/test_report_builder.py",
+    "tests/unit/test_rule_builder.py",
+    "tests/unit/test_statement_parser.py",
+    "tools/export_excel.py"
   ],
   "sessions": [
     {
@@ -28,13 +37,19 @@
       "transcript": "/72/b7e97669c5/2/full.jsonl",
       "content_hash": "/72/b7e97669c5/2/content_hash.txt",
       "prompt": "/72/b7e97669c5/2/prompt.txt"
+    },
+    {
+      "metadata": "/72/b7e97669c5/3/metadata.json",
+      "transcript": "/72/b7e97669c5/3/full.jsonl",
+      "content_hash": "/72/b7e97669c5/3/content_hash.txt",
+      "prompt": "/72/b7e97669c5/3/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 470,
-    "cache_creation_tokens": 143866,
-    "cache_read_tokens": 2352936,
-    "output_tokens": 24026,
-    "api_call_count": 68
+    "input_tokens": 1828,
+    "cache_creation_tokens": 280603,
+    "cache_read_tokens": 6399489,
+    "output_tokens": 46509,
+    "api_call_count": 139
   }
 }

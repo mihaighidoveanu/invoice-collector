@@ -1,0 +1,5 @@
+Currently, in `statement_parser`, the LLM marks transactions ambiguous if the vendor name normalization was uncertain. I find that, in practice, this doesn't behave as expected. I want you to remove this functionality, so remove the `ambiguous` and the `confidence` node fields and propagate this change downstream to all the code.
+
+---
+
+continue
