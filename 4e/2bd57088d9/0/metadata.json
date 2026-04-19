@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "4e2bd57088d9",
+  "session_id": "6d18a892-bf55-4617-bc95-06443f61237b",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-19T20:43:05.793353Z",
+  "branch": "temp/anthropic-direct",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "agent/attachment_reader.py",
+    "agent/gmail_tools.py",
+    "agent/pdf_utils.py",
+    "agent/pipeline.py",
+    "agent/rule_builder.py",
+    "agent/statement_parser.py",
+    "models.py",
+    "tests/unit/test_gmail_tools.py",
+    "tests/unit/test_pipeline.py",
+    "tests/unit/test_rule_builder.py"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "a9683ab8f0b5",
+  "token_usage": {
+    "input_tokens": 37,
+    "cache_creation_tokens": 71189,
+    "cache_read_tokens": 1753317,
+    "output_tokens": 28496,
+    "api_call_count": 32
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-19T20:43:05.765706Z",
+    "agent_lines": 524,
+    "agent_removed": 309,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 4,
+    "total_committed": 524,
+    "total_lines_changed": 837,
+    "agent_percentage": 99.5221027479092,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 340,
+      "user_lines_removed": 37,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "README.md": 30,
+        "agent/gmail_tools.py": 11,
+        "agent/run_artifacts.py": 35,
+        "config.py": 1,
+        "tests/real/test_real_build_rules.py": 40,
+        "tests/real/test_real_fetch_emails.py": 49,
+        "tests/real/test_real_match.py": 79,
+        "tests/real/test_real_pipeline.py": 46,
+        "tests/real/test_real_read_attachments.py": 49
+      },
+      "user_removed_per_file": {
+        "README.md": 33,
+        "agent/gmail_tools.py": 4
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 868,
+      "agent_lines_removed": 346
+    }
+  ]
+}
