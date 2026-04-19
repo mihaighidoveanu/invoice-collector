@@ -1,0 +1,5 @@
+Run the pipeline once.
+
+---
+
+Use the bank statement in the input folder.

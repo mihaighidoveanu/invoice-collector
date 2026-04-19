@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "72b7e97669c5",
+  "strategy": "manual-commit",
+  "branch": "temp/anthropic-direct",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "agent/pipeline.py",
+    "agent/statement_parser.py",
+    "main.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/72/b7e97669c5/0/metadata.json",
+      "transcript": "/72/b7e97669c5/0/full.jsonl",
+      "content_hash": "/72/b7e97669c5/0/content_hash.txt",
+      "prompt": "/72/b7e97669c5/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 13,
+    "cache_creation_tokens": 9123,
+    "cache_read_tokens": 158919,
+    "output_tokens": 902,
+    "api_call_count": 8
+  }
+}
