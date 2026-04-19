@@ -1,0 +1,5 @@
+I want you to change the LLM connection from AWS Bedrock to Anthropic directly. Do this in a new branch. It is just a temporary state until we get the quota increased in Bedrock, so that will be a temporary branch I will work on.
+
+---
+
+How about the.env.example?
