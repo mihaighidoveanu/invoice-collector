@@ -4,12 +4,8 @@ from datetime import date
 
 import pytest
 
-from agent.rule_builder import _vendor_tokens, build_rule, build_rules
-from models import SearchRule, Transaction
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
+from agent.rule_builder import INVOICE_INDICATOR_KEYWORDS, _vendor_tokens, build_vendor_rule, build_vendor_rules
+from models import Transaction, VendorRule
 
 
 def make_tx(vendor: str, amount: float = 29.99) -> Transaction:
@@ -44,84 +40,88 @@ def test_vendor_tokens_lowercased():
     assert all(t == t.lower() for t in tokens)
 
 
+def test_vendor_tokens_filters_short_tokens():
+    tokens = _vendor_tokens("AB Google")
+    assert "ab" not in tokens
+    assert "google" in tokens
+
+
+def test_vendor_tokens_filters_stopwords():
+    tokens = _vendor_tokens("Acme SRL")
+    assert "srl" not in tokens
+    assert "acme" in tokens
+
+
+def test_vendor_tokens_filters_multiple_stopwords():
+    for stopword in ["sa", "ltd", "inc", "sc", "srls"]:
+        tokens = _vendor_tokens(f"Vendor {stopword.upper()}")
+        assert stopword not in tokens
+
+
 # ---------------------------------------------------------------------------
-# build_rule
+# build_vendor_rule
 # ---------------------------------------------------------------------------
 
 
-def test_build_rule_returns_search_rule():
-    rule = build_rule(make_tx("Amazon"))
-    assert isinstance(rule, SearchRule)
+def test_build_vendor_rule_returns_vendor_rule():
+    rule = build_vendor_rule(make_tx("Amazon"))
+    assert isinstance(rule, VendorRule)
 
 
-def test_build_rule_vendor_matches():
-    rule = build_rule(make_tx("Amazon"))
+def test_build_vendor_rule_vendor_matches():
+    rule = build_vendor_rule(make_tx("Amazon"))
     assert rule.vendor == "Amazon"
 
 
-def test_build_rule_subject_keywords_include_vendor_and_invoice_terms():
-    rule = build_rule(make_tx("Google Cloud"))
-    assert "google" in rule.subject_keywords
-    assert "cloud" in rule.subject_keywords
-    assert "invoice" in rule.subject_keywords
-    assert "receipt" in rule.subject_keywords
-    assert "factura" in rule.subject_keywords
-    assert "bill" in rule.subject_keywords
+def test_build_vendor_rule_sender_keywords_include_vendor_tokens():
+    rule = build_vendor_rule(make_tx("Google Cloud"))
+    assert "google" in rule.sender_keywords
+    assert "cloud" in rule.sender_keywords
 
 
-def test_build_rule_body_keywords_include_amount_and_vendor():
-    rule = build_rule(make_tx("Netflix", amount=15.99))
-    assert "15.99" in rule.body_keywords
-    assert "netflix" in rule.body_keywords
-
-
-def test_build_rule_attachment_keywords_include_vendor_and_invoice_terms():
-    rule = build_rule(make_tx("Dropbox"))
-    assert "dropbox" in rule.attachment_filename_keywords
-    assert "invoice" in rule.attachment_filename_keywords
-    assert "receipt" in rule.attachment_filename_keywords
-    assert "factura" in rule.attachment_filename_keywords
-
-
-def test_build_rule_amount_formatted_two_decimal_places():
-    rule = build_rule(make_tx("Zoom", amount=100.0))
-    assert "100.00" in rule.body_keywords
+def test_build_vendor_rule_stopwords_excluded_from_sender_keywords():
+    rule = build_vendor_rule(make_tx("Acme SRL"))
+    assert "srl" not in rule.sender_keywords
+    assert "acme" in rule.sender_keywords
 
 
 # ---------------------------------------------------------------------------
-# build_rules
+# INVOICE_INDICATOR_KEYWORDS
 # ---------------------------------------------------------------------------
 
 
-def test_build_rules_empty_input():
-    assert build_rules([]) == []
+def test_invoice_indicator_keywords_present():
+    for kw in ["invoice", "factura", "receipt", "bill", "payment"]:
+        assert kw in INVOICE_INDICATOR_KEYWORDS
 
 
-def test_build_rules_length_matches_transactions():
+# ---------------------------------------------------------------------------
+# build_vendor_rules
+# ---------------------------------------------------------------------------
+
+
+def test_build_vendor_rules_empty_input():
+    assert build_vendor_rules([]) == []
+
+
+def test_build_vendor_rules_length_matches_transactions():
     txs = [make_tx("Amazon"), make_tx("Google Cloud"), make_tx("Netflix")]
-    rules = build_rules(txs)
+    rules = build_vendor_rules(txs)
     assert len(rules) == 3
 
 
-def test_build_rules_vendors_preserved():
+def test_build_vendor_rules_vendors_preserved():
     txs = [make_tx("Amazon"), make_tx("Dropbox")]
-    rules = build_rules(txs)
+    rules = build_vendor_rules(txs)
     assert rules[0].vendor == "Amazon"
     assert rules[1].vendor == "Dropbox"
 
 
 @pytest.mark.parametrize(
-    "vendor,amount",
-    [
-        ("Zoom", 14.99),
-        ("Slack", 7.25),
-        ("GitHub", 4.00),
-        ("Figma", 45.00),
-        ("Notion", 16.00),
-    ],
+    "vendor",
+    ["Zoom", "Slack", "GitHub", "Figma", "Notion"],
 )
-def test_build_rule_parametrized(vendor: str, amount: float):
-    rule = build_rule(make_tx(vendor, amount=amount))
+def test_build_vendor_rule_parametrized(vendor: str):
+    rule = build_vendor_rule(make_tx(vendor))
     assert rule.vendor == vendor
-    assert f"{amount:.2f}" in rule.body_keywords
-    assert vendor.lower() in rule.subject_keywords
+    assert vendor.lower() in rule.sender_keywords

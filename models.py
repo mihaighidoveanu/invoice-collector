@@ -13,11 +13,9 @@ class Transaction(BaseModel):
     raw_description: str
 
 
-class SearchRule(BaseModel):
+class VendorRule(BaseModel):
     vendor: str
-    subject_keywords: list[str]
-    body_keywords: list[str]
-    attachment_filename_keywords: list[str]
+    sender_keywords: list[str]
 
 
 class EmailMatch(BaseModel):
