@@ -1,0 +1,9 @@
+Change log and report name so that it includes the date and time of the run
+
+---
+
+I want the output of each stage of the pipeline to be saved. Let's explore the best way to implement
+
+---
+
+I don't like that we have five methods to save the stage one for each stage. What we're doing is just writing to disk, so let it be. Call the same method for all of them; it should write to disk regardless of what we have to write to disk.
