@@ -3,7 +3,7 @@
   "checkpoint_id": "4e2bd57088d9",
   "strategy": "manual-commit",
   "branch": "temp/anthropic-direct",
-  "checkpoints_count": 1,
+  "checkpoints_count": 3,
   "files_touched": [
     "agent/attachment_reader.py",
     "agent/gmail_tools.py",
@@ -22,13 +22,19 @@
       "transcript": "/4e/2bd57088d9/0/full.jsonl",
       "content_hash": "/4e/2bd57088d9/0/content_hash.txt",
       "prompt": "/4e/2bd57088d9/0/prompt.txt"
+    },
+    {
+      "metadata": "/4e/2bd57088d9/1/metadata.json",
+      "transcript": "/4e/2bd57088d9/1/full.jsonl",
+      "content_hash": "/4e/2bd57088d9/1/content_hash.txt",
+      "prompt": "/4e/2bd57088d9/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 37,
-    "cache_creation_tokens": 71189,
-    "cache_read_tokens": 1753317,
-    "output_tokens": 28496,
-    "api_call_count": 32
+    "input_tokens": 64,
+    "cache_creation_tokens": 90123,
+    "cache_read_tokens": 2326148,
+    "output_tokens": 32216,
+    "api_call_count": 55
   }
 }
