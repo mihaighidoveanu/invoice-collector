@@ -1,0 +1,67 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "6fc4696adef5",
+  "session_id": "c15439aa-a5d5-402c-8ac9-ac2b3aa1e79c",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-19T13:10:00.700118Z",
+  "branch": "temp/anthropic-direct",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".env.example",
+    "agent/attachment_reader.py",
+    "agent/statement_parser.py",
+    "config.py",
+    "requirements.txt",
+    "tests/integration/test_integrations.py"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "af99c8c6a506",
+  "token_usage": {
+    "input_tokens": 3,
+    "cache_creation_tokens": 7359,
+    "cache_read_tokens": 31795,
+    "output_tokens": 155,
+    "api_call_count": 2
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-19T13:10:00.695399Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 19,
+    "total_committed": 0,
+    "total_lines_changed": 19,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 19,
+      "user_lines_removed": 19,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".env.example": 4,
+        "agent/attachment_reader.py": 5,
+        "agent/statement_parser.py": 5,
+        "config.py": 3,
+        "requirements.txt": 1,
+        "tests/integration/test_integrations.py": 1
+      },
+      "user_removed_per_file": {
+        ".env.example": 4,
+        "agent/attachment_reader.py": 5,
+        "agent/statement_parser.py": 5,
+        "config.py": 3,
+        "requirements.txt": 1,
+        "tests/integration/test_integrations.py": 1
+      }
+    }
+  ]
+}
