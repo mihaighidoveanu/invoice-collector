@@ -9,7 +9,6 @@ from pydantic import BaseModel
 class Transaction(BaseModel):
     vendor: str
     amount: float
-    currency: str
     date: date
     raw_description: str
 
@@ -36,12 +35,6 @@ class AttachmentReading(BaseModel):
     amount: float | None = None
     invoice_date: date | None = None
     confidence: float | None = None
-
-
-class AmbiguousNormalization(BaseModel):
-    raw_description: str
-    normalized_name: str
-    confidence_note: str
 
 
 class FailureReason(str, Enum):

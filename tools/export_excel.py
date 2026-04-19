@@ -60,19 +60,6 @@ def _build_invoices_sheet(ws, results: list[dict]) -> None:
     _autofit(ws)
 
 
-def _build_normalizations_sheet(ws, normalizations: list[dict]) -> None:
-    ws.append(["Raw Bank Text", "Normalized Name", "LLM Confidence Note"])
-    for norm in normalizations:
-        ws.append(
-            [
-                norm.get("raw_description", ""),
-                norm.get("normalized_name", ""),
-                norm.get("confidence_note", ""),
-            ]
-        )
-    _autofit(ws)
-
-
 def _autofit(ws) -> None:
     for col in ws.columns:
         max_len = max((len(str(cell.value or "")) for cell in col), default=0)
@@ -100,9 +87,6 @@ def export(report_path: Path, output_path: Path | None = None) -> Path:
     ws_invoices = wb.active
     ws_invoices.title = "Invoices"
     _build_invoices_sheet(ws_invoices, data.get("results", []))
-
-    ws_norm = wb.create_sheet("Vendor Normalizations")
-    _build_normalizations_sheet(ws_norm, data.get("vendor_normalizations", []))
 
     if output_path is None:
         output_path = report_path.with_suffix(".xlsx")

@@ -8,7 +8,7 @@ from langchain_anthropic import ChatAnthropic
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from config import settings
-from models import AmbiguousNormalization, Transaction
+from models import Transaction
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,7 @@ def _build_llm() -> ChatAnthropic:
     return ChatAnthropic(
         model=settings.llm_model_name,
         api_key=settings.anthropic_api_key,
+        max_tokens=settings.llm_max_tokens,
     )
 
 
@@ -29,19 +30,17 @@ def _extract_text(pdf_path: Path) -> str:
                 text_parts.append(page_text)
     return "\n".join(text_parts)
 
-
+# TODO: remove currency field (all transactions should be in RON)
 _PARSE_PROMPT = """\
-You are a financial data extractor. Given raw bank statement text, extract every transaction \
-and return a JSON array. Each element must have:
+You are a financial data extractor. Given raw bank statement text, extract every outgoing transaction \
+and return a JSON array. Skip bank comissions, bank taxes and the monthly bank package.
+Each element must have:
   - "raw_description": the original text from the statement (string)
-  - "vendor": a clean, normalized business name (e.g. "AMZN MKTP US*AB12" → "Amazon")
-  - "amount": transaction amount as a positive float
-  - "currency": ISO 4217 currency code (e.g. "RON", "EUR", "USD")
+  - "vendor": a clean, normalized business name (e.g. "AMZN MKTP US*AB12" → "Amazon") or person name
+  - "amount": transaction amount as a positive float (in "RON")
   - "date": date in YYYY-MM-DD format
-  - "ambiguous": true if the vendor name normalization was uncertain, else false
-  - "confidence_note": brief note when ambiguous is true, else ""
-
 Return ONLY the JSON array, no prose.
+
 
 Bank statement text:
 {text}
@@ -51,12 +50,10 @@ Bank statement text:
 def _call_llm(text: str, llm: ChatAnthropic) -> str:
     prompt = _PARSE_PROMPT.format(text=text)
     response = llm.invoke(prompt)
-    return str(response.content)
+    return response.content
 
 
-def _parse_llm_response(
-    raw: str,
-) -> tuple[list[Transaction], list[AmbiguousNormalization]]:
+def _parse_llm_response(raw: str) -> list[Transaction]:
     # Strip markdown code fences if present
     cleaned = raw.strip()
     if cleaned.startswith("```"):
@@ -66,50 +63,26 @@ def _parse_llm_response(
 
     data = json.loads(cleaned)
 
-    transactions: list[Transaction] = []
-    ambiguous: list[AmbiguousNormalization] = []
-
-    for item in data:
-        tx = Transaction(
+    return [
+        Transaction(
             vendor=item["vendor"],
             amount=float(item["amount"]),
-            currency=item["currency"],
             date=date.fromisoformat(item["date"]),
             raw_description=item["raw_description"],
         )
-        transactions.append(tx)
-
-        if item.get("ambiguous"):
-            ambiguous.append(
-                AmbiguousNormalization(
-                    raw_description=item["raw_description"],
-                    normalized_name=item["vendor"],
-                    confidence_note=item.get("confidence_note", ""),
-                )
-            )
-
-    return transactions, ambiguous
+        for item in data
+    ]
 
 
-def _log_normalizations(transactions: list[Transaction], ambiguous_set: set[str]) -> None:
+def _log_normalizations(transactions: list[Transaction]) -> None:
     logger.info("=== Vendor normalizations (%d transactions) ===", len(transactions))
     for tx in transactions:
-        tag = "  [ambiguous]" if tx.raw_description in ambiguous_set else ""
-        logger.info('  %-45s → "%s"%s', f'"{tx.raw_description}"', tx.vendor, tag)
+        logger.info('  %-45s → "%s"', f'"{tx.raw_description}"', tx.vendor)
     logger.info("=== End vendor normalizations ===")
 
 
-def parse_statement(
-    pdf_path: Path
-) -> tuple[list[Transaction], list[AmbiguousNormalization]]:
-    """Parse bank statement PDF and return transactions for the target month.
-
-    Args:
-        pdf_path: Path to the bank statement PDF.
-
-    Returns:
-        Tuple of (transactions, ambiguous_normalizations).
-    """
+def parse_statement(pdf_path: Path) -> list[Transaction]:
+    """Parse bank statement PDF and return transactions."""
     text = _extract_text(pdf_path)
     llm = _build_llm()
 
@@ -119,7 +92,7 @@ def parse_statement(
             min=settings.llm_retry_wait_min,
             max=settings.llm_retry_wait_max,
         ),
-        reraise=False,
+        reraise=True,
     )
     def _call_with_retry() -> str:
         return _call_llm(text, llm)
@@ -128,15 +101,27 @@ def parse_statement(
         raw = _call_with_retry()
     except Exception as exc:
         logger.error("LLM call failed after all retries: %s", exc)
-        return [], []
+        return []
 
     try:
-        transactions, ambiguous = _parse_llm_response(raw)
+        transactions = _parse_llm_response(raw)
     except Exception as exc:
         logger.error("Failed to parse LLM response: %s", exc)
-        return [], []
+        return []
 
-    ambiguous_raw_set = {a.raw_description for a in ambiguous}
-    _log_normalizations(transactions, ambiguous_raw_set)
+    _log_normalizations(transactions)
 
-    return transactions, ambiguous
+    return transactions
+
+if __name__ == '__main__':
+
+    pdf_path = 'input/0_Extrase_RO73BTRLRONCRT0CR2266601_2026-01-01_2026-01-31_CALEIDOSCOP_PRIME_BUZZ_S_R_L.PDF'
+    text = _extract_text(pdf_path)
+
+    llm = _build_llm()
+    response = _call_llm(text, llm)
+
+    transactions = _parse_llm_response(response)
+    for transaction in transactions:
+        print(transaction, '\n')
+    print("Count", len(transactions))

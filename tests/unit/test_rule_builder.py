@@ -12,11 +12,10 @@ from models import SearchRule, Transaction
 # ---------------------------------------------------------------------------
 
 
-def make_tx(vendor: str, amount: float = 29.99, currency: str = "USD") -> Transaction:
+def make_tx(vendor: str, amount: float = 29.99) -> Transaction:
     return Transaction(
         vendor=vendor,
         amount=amount,
-        currency=currency,
         date=date(2025, 3, 5),
         raw_description=f"RAW {vendor.upper()}",
     )

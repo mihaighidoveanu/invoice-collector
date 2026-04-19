@@ -12,9 +12,9 @@ from pathlib import Path
 from agent.attachment_reader import read_attachment
 from agent.gmail_tools import download_attachment, list_emails_with_attachments
 from agent.rule_builder import build_rules
+from agent.run_artifacts import RunArtifacts
 from agent.statement_parser import parse_statement
 from models import (
-    AmbiguousNormalization,
     AttachmentReading,
     EmailMatch,
     FailureReason,
@@ -38,7 +38,7 @@ def _derive_target_month(transactions: list[Transaction]) -> str:
         counts[tx.date.strftime("%Y-%m")] += 1
     return max(counts, key=lambda k: counts[k])
 
-
+#TODO: should be only target month + next 5 days in following month
 def _analysis_window(target_month: str) -> tuple[date, date]:
     """Return (period_start, period_end) spanning the target month + the following month.
 
@@ -111,31 +111,38 @@ def _vendor_match(tx_vendor: str, reading_vendor: str | None) -> bool:
 # Pipeline entry point
 # ---------------------------------------------------------------------------
 
-
 def run_pipeline(
     bank_statement_path: Path,
     target_month: str | None = None,
-) -> tuple[list[InvoiceResult], list[AmbiguousNormalization], str]:
+    run_dir: Path | None = None,
+) -> tuple[list[InvoiceResult], str]:
     """Run the full invoice collection pipeline.
 
     Args:
         bank_statement_path: Path to the bank statement PDF.
         target_month: Override the derived target month (YYYY-MM). If None,
             it is inferred from the most common transaction month.
+        run_dir: Directory to persist intermediate stage outputs. If None,
+            no intermediate artifacts are written.
 
     Returns:
-        Tuple of (invoice_results, ambiguous_normalizations, target_month_str).
+        Tuple of (invoice_results, target_month_str).
     """
+    artifacts = RunArtifacts(run_dir, str(bank_statement_path)) if run_dir else None
+
     # --- Phase 1: parse statement ---
-    transactions, ambiguous = parse_statement(
-        bank_statement_path
-    )
+    transactions = parse_statement(bank_statement_path)
+    if artifacts:
+        artifacts.save("01_transactions.json", transactions)
 
     if not transactions:
         logger.warning("No transactions parsed; returning empty results.")
-        return [], ambiguous, target_month or ""
+        return [], target_month or ""
 
     derived_month = target_month or _derive_target_month(transactions)
+    if artifacts:
+        artifacts.save_meta(derived_month)
+
     period_start, period_end = _analysis_window(derived_month)
     logger.info(
         "Target month: %s | Analysis window: %s → %s",
@@ -146,9 +153,13 @@ def run_pipeline(
 
     # --- Phase 2: build rules ---
     rules = build_rules(transactions)
+    if artifacts:
+        artifacts.save("02_rules.json", rules)
 
     # --- Phase 3: fetch emails ---
     emails = list_emails_with_attachments(period_start, period_end)
+    if artifacts:
+        artifacts.save("03_emails.json", emails)
     logger.info("Processing %d emails against %d transactions", len(emails), len(transactions))
 
     # Pool of confirmed invoices: mapping from (email_id, filename) → (reading, email, local_path)
@@ -160,6 +171,8 @@ def run_pipeline(
 
     # Precompute per-amount counts for early-exit check (B2)
     tx_amount_counts: Counter[float] = Counter(tx.amount for tx in transactions)
+
+    readings_log: list[dict] = []
 
     for email in emails:
         if not email.attachment_filenames:
@@ -179,6 +192,14 @@ def run_pipeline(
                 logger.warning("Failed processing attachment for %s: %s", matched_rule.vendor, exc)
                 continue
 
+# TODO: check if the invoice matches any of the transactions
+            readings_log.append({
+                "email_id": email.email_id,
+                "filename": filename,
+                "vendor_dir": matched_rule.vendor,
+                "reading": reading.model_dump(mode="json"),
+            })
+
             if reading.is_invoice:
                 invoice_pool[pool_key] = (reading, email, local_path)
                 direct_matches[matched_rule.vendor] = pool_key
@@ -192,6 +213,13 @@ def run_pipeline(
                 logger.debug("Fallback download failed for email %s: %s", email.email_id, exc)
                 continue
 
+            readings_log.append({
+                "email_id": email.email_id,
+                "filename": filename,
+                "vendor_dir": "unknown",
+                "reading": reading.model_dump(mode="json"),
+            })
+
             if reading.is_invoice:
                 invoice_pool[pool_key] = (reading, email, local_path)
 
@@ -203,6 +231,9 @@ def run_pipeline(
             logger.info("All transaction amounts covered; stopping email scan early.")
             break
 
+    if artifacts:
+        artifacts.save("04_readings.json", readings_log)
+
     # --- Phase 7: amount-based matching ---
     # Group confirmed invoices by amount
     amount_index: dict[float, list[tuple[str, str]]] = defaultdict(list)
@@ -213,6 +244,7 @@ def run_pipeline(
     results: list[InvoiceResult] = []
     claimed: set[tuple[str, str]] = set()
 
+# there are less transactions than attachments. Matching should be reversed. When downloading attachments, matching should be made with one of the transactions in order to keep the downloaded attachment. Only matched transactions should count towards the counter.
     for tx in transactions:
         try:
             result = _match_transaction(tx, amount_index, invoice_pool, claimed)
@@ -228,7 +260,10 @@ def run_pipeline(
                 )
             )
 
-    return results, ambiguous, derived_month
+    if artifacts:
+        artifacts.save("05_results.json", results)
+
+    return results, derived_month
 
 
 def _match_transaction(

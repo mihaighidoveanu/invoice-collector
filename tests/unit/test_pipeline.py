@@ -24,7 +24,6 @@ def _tx(vendor: str, amount: float, tx_date: date = date(2025, 3, 5)) -> Transac
     return Transaction(
         vendor=vendor,
         amount=amount,
-        currency="USD",
         date=tx_date,
         raw_description=f"RAW {vendor.upper()}",
     )
@@ -95,12 +94,12 @@ def test_analysis_window_december_wraps_year():
 def test_unique_amount_match(mock_parse, mock_list_emails, mock_download, mock_read):
     """Clean unique-amount match → status='found'."""
     transactions = [_tx("Amazon", 29.99)]
-    mock_parse.return_value = (transactions, [])
+    mock_parse.return_value = transactions
     mock_list_emails.return_value = [_email("e1", subject="Amazon invoice")]
     mock_download.return_value = Path("/tmp/invoice.pdf")
     mock_read.return_value = _reading("Amazon", 29.99)
 
-    results, _, month = run_pipeline(Path("statement.pdf"), target_month="2025-03")
+    results, month = run_pipeline(Path("statement.pdf"), target_month="2025-03")
 
     assert len(results) == 1
     assert results[0].status == "found"
@@ -115,10 +114,10 @@ def test_unique_amount_match(mock_parse, mock_list_emails, mock_download, mock_r
 def test_no_email_match_returns_missing(mock_parse, mock_list_emails, mock_download, mock_read):
     """No emails found → status='missing' with AMOUNT_MISMATCH."""
     transactions = [_tx("Zoom", 14.99)]
-    mock_parse.return_value = (transactions, [])
+    mock_parse.return_value = transactions
     mock_list_emails.return_value = []
 
-    results, _, _ = run_pipeline(Path("statement.pdf"), target_month="2025-03")
+    results, _ = run_pipeline(Path("statement.pdf"), target_month="2025-03")
 
     assert results[0].status == "missing"
     assert results[0].failure_reason == FailureReason.AMOUNT_MISMATCH
@@ -133,7 +132,7 @@ def test_duplicate_amount_vendor_tiebreak_success(
 ):
     """Two invoices with same amount; vendor tiebreak resolves → found."""
     transactions = [_tx("Netflix", 15.99)]
-    mock_parse.return_value = (transactions, [])
+    mock_parse.return_value = transactions
     mock_list_emails.return_value = [
         _email("e1", subject="Netflix invoice"),
         _email("e2", subject="Other invoice"),
@@ -151,7 +150,7 @@ def test_duplicate_amount_vendor_tiebreak_success(
 
     mock_read.side_effect = read_side_effect
 
-    results, _, _ = run_pipeline(Path("statement.pdf"), target_month="2025-03")
+    results, _ = run_pipeline(Path("statement.pdf"), target_month="2025-03")
 
     assert results[0].status == "found"
 
@@ -169,7 +168,7 @@ def test_duplicate_amount_vendor_tiebreak_fails(
     so both emails are downloaded and both end up as duplicate candidates with no vendor match.
     """
     transactions = [_tx("Netflix", 15.99), _tx("Spotify", 15.99)]
-    mock_parse.return_value = (transactions, [])
+    mock_parse.return_value = transactions
     mock_list_emails.return_value = [
         _email("e1", subject="Hulu invoice"),
         _email("e2", subject="Disney invoice"),
@@ -180,7 +179,7 @@ def test_duplicate_amount_vendor_tiebreak_fails(
         _reading("Disney", 15.99),
     ]
 
-    results, _, _ = run_pipeline(Path("statement.pdf"), target_month="2025-03")
+    results, _ = run_pipeline(Path("statement.pdf"), target_month="2025-03")
 
     assert all(r.status == "missing" for r in results)
     assert all(r.failure_reason == FailureReason.DUPLICATE_AMOUNT_VENDOR_MISMATCH for r in results)
@@ -189,9 +188,8 @@ def test_duplicate_amount_vendor_tiebreak_fails(
 @patch("agent.pipeline.parse_statement")
 def test_no_transactions_returns_empty(mock_parse):
     """If parser returns nothing, pipeline returns empty."""
-    mock_parse.return_value = ([], [])
+    mock_parse.return_value = []
 
-    results, ambiguous, _ = run_pipeline(Path("statement.pdf"), target_month="2025-03")
+    results, _ = run_pipeline(Path("statement.pdf"), target_month="2025-03")
 
     assert results == []
-    assert ambiguous == []
