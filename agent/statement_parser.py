@@ -37,7 +37,7 @@ and return a JSON array. Skip bank comissions, bank taxes and the monthly bank p
 Each element must have:
   - "raw_description": the original text from the statement (string)
   - "vendor": a clean, normalized business name (e.g. "AMZN MKTP US*AB12" → "Amazon") or person name
-  - "amount": transaction amount as a positive float (in "RON")
+  - "amount": transaction amount as a positive float
   - "date": date in YYYY-MM-DD format
 Return ONLY the JSON array, no prose.
 

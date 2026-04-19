@@ -73,13 +73,13 @@ def test_derive_target_month():
 def test_analysis_window_march():
     start, end = _analysis_window("2025-03")
     assert start == date(2025, 3, 1)
-    assert end == date(2025, 5, 1)
+    assert end == date(2025, 4, 6)  # 2025-03-31 + 6 days (exclusive, covers through +5)
 
 
 def test_analysis_window_december_wraps_year():
     start, end = _analysis_window("2025-12")
     assert start == date(2025, 12, 1)
-    assert end == date(2026, 2, 1)
+    assert end == date(2026, 1, 6)  # 2025-12-31 + 6 days
 
 
 # ---------------------------------------------------------------------------

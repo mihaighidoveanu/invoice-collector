@@ -4,9 +4,10 @@ Ties together statement parsing, rule building, Gmail search,
 attachment downloading, and invoice-to-transaction matching.
 """
 
+import calendar
 import logging
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 from agent.attachment_reader import read_attachment
@@ -38,31 +39,17 @@ def _derive_target_month(transactions: list[Transaction]) -> str:
         counts[tx.date.strftime("%Y-%m")] += 1
     return max(counts, key=lambda k: counts[k])
 
-#TODO: should be only target month + next 5 days in following month
 def _analysis_window(target_month: str) -> tuple[date, date]:
-    """Return (period_start, period_end) spanning the target month + the following month.
+    """Return (period_start, period_end) spanning the target month through +5 days.
 
-    E.g. "2025-03" → (2025-03-01, 2025-04-30).
-    The end date is the last day of the month following the target month.
+    E.g. "2025-03" → (2025-03-01, 2025-04-05).
     """
     year, month = int(target_month[:4]), int(target_month[5:7])
 
     period_start = date(year, month, 1)
 
-    # Advance two months to get the month after next, then subtract one day
-    next_month = month + 1
-    next_year = year
-    if next_month > 12:
-        next_month = 1
-        next_year += 1
-
-    after_next_month = next_month + 1
-    after_next_year = next_year
-    if after_next_month > 12:
-        after_next_month = 1
-        after_next_year += 1
-
-    period_end = date(after_next_year, after_next_month, 1)
+    _, last_day = calendar.monthrange(year, month)
+    period_end = date(year, month, last_day) + timedelta(days=6)  # exclusive, covers through +5 days
     # period_end is exclusive in the Gmail query, so passing the 1st of the month
     # after the analysis window end covers through the last day of the following month.
     return period_start, period_end
