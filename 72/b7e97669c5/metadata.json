@@ -3,7 +3,7 @@
   "checkpoint_id": "72b7e97669c5",
   "strategy": "manual-commit",
   "branch": "temp/anthropic-direct",
-  "checkpoints_count": 9,
+  "checkpoints_count": 10,
   "files_touched": [
     "agent/pipeline.py",
     "agent/report_builder.py",
@@ -43,13 +43,19 @@
       "transcript": "/72/b7e97669c5/3/full.jsonl",
       "content_hash": "/72/b7e97669c5/3/content_hash.txt",
       "prompt": "/72/b7e97669c5/3/prompt.txt"
+    },
+    {
+      "metadata": "/72/b7e97669c5/4/metadata.json",
+      "transcript": "/72/b7e97669c5/4/full.jsonl",
+      "content_hash": "/72/b7e97669c5/4/content_hash.txt",
+      "prompt": "/72/b7e97669c5/4/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 1828,
-    "cache_creation_tokens": 280603,
-    "cache_read_tokens": 6399489,
-    "output_tokens": 46509,
-    "api_call_count": 139
+    "input_tokens": 1866,
+    "cache_creation_tokens": 343601,
+    "cache_read_tokens": 7919475,
+    "output_tokens": 75167,
+    "api_call_count": 171
   }
 }

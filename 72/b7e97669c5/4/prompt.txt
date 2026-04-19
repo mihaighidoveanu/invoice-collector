@@ -1,0 +1,1 @@
+I want this solution to have a way to run without spinning up a server and doing an HTTP request. I want this for debug purposes. Also, when debugging, it should be possible to run only parts of the pipeline. There is a need to test each individual part of the pipeline. Should this debugging be made in the form of tests?
