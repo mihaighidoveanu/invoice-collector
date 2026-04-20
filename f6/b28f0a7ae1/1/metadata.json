@@ -1,0 +1,47 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "f6b28f0a7ae1",
+  "session_id": "6d18a892-bf55-4617-bc95-06443f61237b",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-20T07:16:21.747537Z",
+  "branch": "temp/anthropic-direct",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "README.md",
+    "config.py"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "a9683ab8f0b5",
+  "token_usage": {
+    "input_tokens": 38,
+    "cache_creation_tokens": 71660,
+    "cache_read_tokens": 1833065,
+    "output_tokens": 28509,
+    "api_call_count": 33
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-20T07:16:21.719892Z",
+    "agent_lines": 31,
+    "agent_removed": 33,
+    "human_added": 96,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 127,
+    "total_lines_changed": 170,
+    "agent_percentage": 37.64705882352941,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}

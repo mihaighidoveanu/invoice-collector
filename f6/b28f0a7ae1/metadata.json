@@ -3,7 +3,7 @@
   "checkpoint_id": "f6b28f0a7ae1",
   "strategy": "manual-commit",
   "branch": "temp/anthropic-direct",
-  "checkpoints_count": 1,
+  "checkpoints_count": 3,
   "files_touched": [
     "README.md",
     "agent/attachment_reader.py",
@@ -19,13 +19,19 @@
       "transcript": "/f6/b28f0a7ae1/0/full.jsonl",
       "content_hash": "/f6/b28f0a7ae1/0/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/f6/b28f0a7ae1/1/metadata.json",
+      "transcript": "/f6/b28f0a7ae1/1/full.jsonl",
+      "content_hash": "/f6/b28f0a7ae1/1/content_hash.txt",
+      "prompt": "/f6/b28f0a7ae1/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 266,
-    "cache_creation_tokens": 382374,
-    "cache_read_tokens": 5136287,
-    "output_tokens": 65218,
-    "api_call_count": 77
+    "input_tokens": 304,
+    "cache_creation_tokens": 454034,
+    "cache_read_tokens": 6969352,
+    "output_tokens": 93727,
+    "api_call_count": 110
   }
 }
