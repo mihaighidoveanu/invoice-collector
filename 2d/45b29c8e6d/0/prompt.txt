@@ -1,0 +1,5 @@
+The real tests are removed. Make sure they are removed.
+
+---
+
+And all other connections to these tests are deleted?

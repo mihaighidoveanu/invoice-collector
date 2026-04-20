@@ -1,0 +1,61 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "2d45b29c8e6d",
+  "session_id": "5e0669d2-a718-47a2-aeb9-2cb20df30f34",
+  "strategy": "manual-commit",
+  "created_at": "2026-04-20T08:10:52.774192Z",
+  "branch": "temp/anthropic-direct",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "README.md",
+    "tests/real/conftest.py",
+    "tests/real/test_real_parse.py"
+  ],
+  "agent": "Claude Code",
+  "model": "",
+  "turn_id": "265bba856dad",
+  "token_usage": {
+    "input_tokens": 8,
+    "cache_creation_tokens": 7453,
+    "cache_read_tokens": 73945,
+    "output_tokens": 378,
+    "api_call_count": 4
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-04-20T08:10:52.767374Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 116,
+    "total_committed": 0,
+    "total_lines_changed": 116,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 117,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_removed_per_file": {
+        "README.md": 6,
+        "agent/statement_parser.py": 1,
+        "tests/real/conftest.py": 68,
+        "tests/real/test_real_parse.py": 42
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 117
+    }
+  ]
+}
