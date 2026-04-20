@@ -90,10 +90,7 @@ def build_gmail_query(vendor_rules: list[VendorRule], start: date, end: date) ->
         from_parts = " OR ".join(f"from:{t}" for t in unique_tokens)
         from_clause = f" ({from_parts})"
 
-    keyword_parts = " OR ".join(INVOICE_INDICATOR_KEYWORDS)
-    keyword_clause = f" ({keyword_parts})"
-
-    query = f"has:attachment filename:pdf {date_clause}{from_clause}{keyword_clause}"
+    query = f"has:attachment filename:pdf {date_clause}{from_clause}"
     return query
 
 

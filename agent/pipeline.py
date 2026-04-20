@@ -70,12 +70,15 @@ def _amount_strings(amount: float) -> list[str]:
     strs = [
         f"{int_part}.{dec_part:02d}",   # 1500.00
         f"{int_part},{dec_part:02d}",   # 1500,00
+        str(int_part),                   # 1500 (bare integer, e.g. Romanian payment orders: "PLATITI 84 LEI")
     ]
     if int_part >= 1000:
         int_str_eu = f"{int_part:,}".replace(",", ".")
         strs.append(f"{int_str_eu},{dec_part:02d}")  # 1.500,00
         int_str_us = f"{int_part:,}"
         strs.append(f"{int_str_us}.{dec_part:02d}")  # 1,500.00
+        int_str_space = f"{int_part:,}".replace(",", " ")
+        strs.append(int_str_space)  # 1 500 (space-separated thousands, e.g. "PLATITI 1 476 LEI")
 
     return list(dict.fromkeys(strs))
 
@@ -91,8 +94,9 @@ def _build_amount_lookup(txs: list[Transaction]) -> dict[str, list[int]]:
 
 def _build_amount_regex(amount_strs: Iterable[str]) -> re.Pattern:
     # Sort longest first so more-specific patterns win over substrings.
+    # Wrap each pattern in word boundaries so bare integers don't match substrings.
     escaped = sorted([re.escape(s) for s in amount_strs], key=len, reverse=True)
-    return re.compile("|".join(escaped))
+    return re.compile("|".join(rf"(?<!\d){p}(?!\d)" for p in escaped))
 
 
 # ---------------------------------------------------------------------------
@@ -123,6 +127,31 @@ def _assign_to_transaction(
 
     Returns the matched transaction index, or None if ambiguous/no match.
     """
+    # Prefer the LLM-extracted amount as a precise signal over noisy regex hits.
+    # Documents like salary statements contain many incidental amounts (taxes, deductions)
+    # that would produce ambiguous regex matches; the LLM primary amount is more reliable.
+    if reading.amount is not None:
+        llm_candidates: set[int] = set()
+        for s in _amount_strings(reading.amount):
+            for idx in amount_lookup.get(s, []):
+                if idx not in claimed:
+                    llm_candidates.add(idx)
+        if len(llm_candidates) == 1:
+            return next(iter(llm_candidates))
+        if llm_candidates:
+            # Vendor tiebreak within LLM-amount candidates
+            if candidate_vendor:
+                vendor_hits = [i for i in llm_candidates if _vendor_match(transactions[i].vendor, candidate_vendor)]
+                if len(vendor_hits) == 1:
+                    return vendor_hits[0]
+            if reading.vendor:
+                vendor_hits = [i for i in llm_candidates if _vendor_match(transactions[i].vendor, reading.vendor)]
+                if len(vendor_hits) == 1:
+                    return vendor_hits[0]
+            # Still ambiguous — don't guess
+            return None
+
+    # Fallback: use all regex hits (for documents where LLM couldn't extract amount)
     matching: set[int] = set()
     for hit in hits:
         for idx in amount_lookup.get(hit, []):
@@ -130,21 +159,27 @@ def _assign_to_transaction(
                 matching.add(idx)
 
     if not matching:
+        # No amount match at all (e.g. foreign-currency invoices). Fall back to vendor-only
+        # matching when the sender unambiguously identifies one unclaimed transaction.
+        if candidate_vendor:
+            vendor_only = [
+                i for i in range(len(transactions))
+                if i not in claimed and _vendor_match(transactions[i].vendor, candidate_vendor)
+            ]
+            if len(vendor_only) == 1:
+                return vendor_only[0]
         return None
 
-    # Sender-keyword vendor tiebreak (highest priority)
     if candidate_vendor:
         vendor_hits = [i for i in matching if _vendor_match(transactions[i].vendor, candidate_vendor)]
         if len(vendor_hits) == 1:
             return vendor_hits[0]
 
-    # LLM-extracted vendor tiebreak
     if reading.vendor:
         vendor_hits = [i for i in matching if _vendor_match(transactions[i].vendor, reading.vendor)]
         if len(vendor_hits) == 1:
             return vendor_hits[0]
 
-    # Amount-only: claim only when unambiguous
     if len(matching) == 1:
         return next(iter(matching))
 
@@ -246,7 +281,9 @@ def run_pipeline(
                 continue
 
             hits = amount_regex.findall(text)
-            if not hits:
+            if not hits and not candidate_vendor:
+                # Only skip when there's no confirmed sender match — a vendor-matched email
+                # may invoice in a foreign currency whose amount won't appear in the bank statement.
                 logger.debug("No amount match in %s; skipping LLM", filename)
                 continue
 

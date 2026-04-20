@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     # LLM
     anthropic_api_key: str = ""
     llm_model_name: str = "claude-haiku-4-5-20251001"
+    llm_max_tokens: int = 8192
     llm_max_retries: int = 2
     llm_retry_wait_min: float = 1.0
     llm_retry_wait_max: float = 10.0

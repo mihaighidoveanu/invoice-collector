@@ -21,13 +21,17 @@ logger = logging.getLogger(__name__)
 _MIN_TEXT_LENGTH = 50
 
 _INVOICE_PROMPT = """\
-You are an invoice detector. Given the text of a PDF, determine whether it is an invoice.
+You are an accounting document detector. Given the text of a PDF, determine whether it is \
+a financial supporting document for bookkeeping — this includes invoices (factura), receipts, \
+payment orders (ordin de plata), salary payment statements (stat de plata salarii), or any \
+official document that records a monetary transaction or obligation.
 
-If it IS an invoice, respond with JSON:
-{{"is_invoice": true, "vendor": "<vendor name>", "amount": <float>,
+If it IS such a document, respond with JSON:
+{{"is_invoice": true, "vendor": "<payer or payee name>", "amount": <float — the primary amount paid or owed>,
 "date": "<YYYY-MM-DD>", "confidence": <0.0-1.0>}}
 
-If it is NOT an invoice, respond with JSON:
+If it is NOT a financial document (e.g. attendance sheet / pontaj, cover letter, informational report), \
+respond with JSON:
 {{"is_invoice": false}}
 
 Return ONLY the JSON object, no prose.
