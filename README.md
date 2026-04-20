@@ -81,12 +81,6 @@ Or via Claude Code slash command: `/unit-test`
 
 Or via Claude Code slash commands: `/test-gmail`, `/test-llm`
 
-**Real tests** — run the full pipeline against a real bank statement PDF:
-
-```bash
-TEST_STATEMENT_PDF=/path/to/statement.pdf .venv/bin/python -m pytest tests/real -v -s
-```
-
 ---
 
 ## Output files
