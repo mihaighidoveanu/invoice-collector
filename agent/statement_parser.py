@@ -21,7 +21,6 @@ def _build_llm() -> ChatAnthropic:
     )
 
 
-# TODO: remove currency field (all transactions should be in RON)
 _PARSE_PROMPT = """\
 You are a financial data extractor. Given raw bank statement text, extract every outgoing transaction \
 and return a JSON array. Skip bank comissions, bank taxes and the monthly bank package.
