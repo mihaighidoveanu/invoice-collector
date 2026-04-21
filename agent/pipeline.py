@@ -4,23 +4,27 @@ Ties together statement parsing, rule building, Gmail search,
 attachment downloading, and invoice-to-transaction matching.
 """
 
+import calendar
 import logging
-from collections import Counter, defaultdict
-from datetime import date
+import re
+from collections import defaultdict
+from datetime import date, timedelta
 from pathlib import Path
+from typing import Iterable
 
 from agent.attachment_reader import read_attachment
-from agent.gmail_tools import download_attachment, list_emails_with_attachments
-from agent.rule_builder import build_rules
+from agent.gmail_tools import build_gmail_query, download_attachment, list_emails_with_attachments
+from agent.pdf_utils import extract_text
+from agent.rule_builder import build_vendor_rules
+from agent.run_artifacts import RunArtifacts
 from agent.statement_parser import parse_statement
+from config import settings
 from models import (
-    AmbiguousNormalization,
     AttachmentReading,
-    EmailMatch,
     FailureReason,
     InvoiceResult,
-    SearchRule,
     Transaction,
+    VendorRule,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,104 +42,186 @@ def _derive_target_month(transactions: list[Transaction]) -> str:
         counts[tx.date.strftime("%Y-%m")] += 1
     return max(counts, key=lambda k: counts[k])
 
-
 def _analysis_window(target_month: str) -> tuple[date, date]:
-    """Return (period_start, period_end) spanning the target month + the following month.
+    """Return (period_start, period_end) spanning the target month through +5 days.
 
-    E.g. "2025-03" → (2025-03-01, 2025-04-30).
-    The end date is the last day of the month following the target month.
+    E.g. "2025-03" → (2025-03-01, 2025-04-05).
     """
     year, month = int(target_month[:4]), int(target_month[5:7])
 
     period_start = date(year, month, 1)
 
-    # Advance two months to get the month after next, then subtract one day
-    next_month = month + 1
-    next_year = year
-    if next_month > 12:
-        next_month = 1
-        next_year += 1
-
-    after_next_month = next_month + 1
-    after_next_year = next_year
-    if after_next_month > 12:
-        after_next_month = 1
-        after_next_year += 1
-
-    period_end = date(after_next_year, after_next_month, 1)
-    # period_end is exclusive in the Gmail query, so passing the 1st of the month
-    # after the analysis window end covers through the last day of the following month.
+    _, last_day = calendar.monthrange(year, month)
+    period_end = date(year, month, last_day) + timedelta(days=6)  # exclusive, covers through +5 days
     return period_start, period_end
 
 
 # ---------------------------------------------------------------------------
-# Metadata matching
+# Amount helpers
 # ---------------------------------------------------------------------------
 
 
-def _email_matches_rule(email: EmailMatch, rule: SearchRule) -> bool:
-    """Return True if the email metadata matches the rule."""
-    subject_lower = email.subject.lower()
-    if any(kw in subject_lower for kw in rule.subject_keywords):
-        return True
+def _amount_strings(amount: float) -> list[str]:
+    """Return all plausible string encodings for an amount (EU/US formats)."""
+    total_cents = round(amount * 100)
+    int_part = total_cents // 100
+    dec_part = total_cents % 100
 
-    filenames_lower = [fn.lower() for fn in email.attachment_filenames]
-    for kw in rule.attachment_filename_keywords:
-        if any(kw in fn for fn in filenames_lower):
-            return True
+    strs = [
+        f"{int_part}.{dec_part:02d}",   # 1500.00
+        f"{int_part},{dec_part:02d}",   # 1500,00
+        str(int_part),                   # 1500 (bare integer, e.g. Romanian payment orders: "PLATITI 84 LEI")
+    ]
+    if int_part >= 1000:
+        int_str_eu = f"{int_part:,}".replace(",", ".")
+        strs.append(f"{int_str_eu},{dec_part:02d}")  # 1.500,00
+        int_str_us = f"{int_part:,}"
+        strs.append(f"{int_str_us}.{dec_part:02d}")  # 1,500.00
+        int_str_space = f"{int_part:,}".replace(",", " ")
+        strs.append(int_str_space)  # 1 500 (space-separated thousands, e.g. "PLATITI 1 476 LEI")
 
-    return False
+    return list(dict.fromkeys(strs))
 
 
-def _find_matching_rule(email: EmailMatch, rules: list[SearchRule]) -> SearchRule | None:
-    for rule in rules:
-        if _email_matches_rule(email, rule):
-            return rule
-    return None
+def _build_amount_lookup(txs: list[Transaction]) -> dict[str, list[int]]:
+    """Map every plausible amount string encoding to the indices of matching transactions."""
+    lookup: defaultdict[str, list[int]] = defaultdict(list)
+    for idx, tx in enumerate(txs):
+        for s in _amount_strings(tx.amount):
+            lookup[s].append(idx)
+    return dict(lookup)
+
+
+def _build_amount_regex(amount_strs: Iterable[str]) -> re.Pattern:
+    # Sort longest first so more-specific patterns win over substrings.
+    # Wrap each pattern in word boundaries so bare integers don't match substrings.
+    escaped = sorted([re.escape(s) for s in amount_strs], key=len, reverse=True)
+    return re.compile("|".join(rf"(?<!\d){p}(?!\d)" for p in escaped))
 
 
 # ---------------------------------------------------------------------------
-# Amount / vendor matching
+# Vendor matching
 # ---------------------------------------------------------------------------
 
 
-def _vendor_match(tx_vendor: str, reading_vendor: str | None) -> bool:
-    if not reading_vendor:
-        return False
+def _vendor_match(tx_vendor: str, candidate: str) -> bool:
     tx = tx_vendor.lower()
-    rv = reading_vendor.lower()
-    return tx in rv or rv in tx
+    cv = candidate.lower()
+    return tx in cv or cv in tx
+
+
+# ---------------------------------------------------------------------------
+# Transaction assignment
+# ---------------------------------------------------------------------------
+
+
+def _assign_to_transaction(
+    reading: AttachmentReading,
+    hits: list[str],
+    candidate_vendor: str | None,
+    transactions: list[Transaction],
+    claimed: set[int],
+    amount_lookup: dict[str, list[int]],
+) -> int | None:
+    """Try to assign a confirmed invoice to an unclaimed transaction.
+
+    Returns the matched transaction index, or None if ambiguous/no match.
+    """
+    # Prefer the LLM-extracted amount as a precise signal over noisy regex hits.
+    # Documents like salary statements contain many incidental amounts (taxes, deductions)
+    # that would produce ambiguous regex matches; the LLM primary amount is more reliable.
+    if reading.amount is not None:
+        llm_candidates: set[int] = set()
+        for s in _amount_strings(reading.amount):
+            for idx in amount_lookup.get(s, []):
+                if idx not in claimed:
+                    llm_candidates.add(idx)
+        if len(llm_candidates) == 1:
+            return next(iter(llm_candidates))
+        if llm_candidates:
+            # Vendor tiebreak within LLM-amount candidates
+            if candidate_vendor:
+                vendor_hits = [i for i in llm_candidates if _vendor_match(transactions[i].vendor, candidate_vendor)]
+                if len(vendor_hits) == 1:
+                    return vendor_hits[0]
+            if reading.vendor:
+                vendor_hits = [i for i in llm_candidates if _vendor_match(transactions[i].vendor, reading.vendor)]
+                if len(vendor_hits) == 1:
+                    return vendor_hits[0]
+            # Still ambiguous — don't guess
+            return None
+
+    # Fallback: use all regex hits (for documents where LLM couldn't extract amount)
+    matching: set[int] = set()
+    for hit in hits:
+        for idx in amount_lookup.get(hit, []):
+            if idx not in claimed:
+                matching.add(idx)
+
+    if not matching:
+        # No amount match at all (e.g. foreign-currency invoices). Fall back to vendor-only
+        # matching when the sender unambiguously identifies one unclaimed transaction.
+        if candidate_vendor:
+            vendor_only = [
+                i for i in range(len(transactions))
+                if i not in claimed and _vendor_match(transactions[i].vendor, candidate_vendor)
+            ]
+            if len(vendor_only) == 1:
+                return vendor_only[0]
+        return None
+
+    if candidate_vendor:
+        vendor_hits = [i for i in matching if _vendor_match(transactions[i].vendor, candidate_vendor)]
+        if len(vendor_hits) == 1:
+            return vendor_hits[0]
+
+    if reading.vendor:
+        vendor_hits = [i for i in matching if _vendor_match(transactions[i].vendor, reading.vendor)]
+        if len(vendor_hits) == 1:
+            return vendor_hits[0]
+
+    if len(matching) == 1:
+        return next(iter(matching))
+
+    return None
 
 
 # ---------------------------------------------------------------------------
 # Pipeline entry point
 # ---------------------------------------------------------------------------
 
-
 def run_pipeline(
     bank_statement_path: Path,
     target_month: str | None = None,
-) -> tuple[list[InvoiceResult], list[AmbiguousNormalization], str]:
+    run_dir: Path | None = None,
+) -> tuple[list[InvoiceResult], str]:
     """Run the full invoice collection pipeline.
 
     Args:
         bank_statement_path: Path to the bank statement PDF.
         target_month: Override the derived target month (YYYY-MM). If None,
             it is inferred from the most common transaction month.
+        run_dir: Directory to persist intermediate stage outputs. If None,
+            no intermediate artifacts are written.
 
     Returns:
-        Tuple of (invoice_results, ambiguous_normalizations, target_month_str).
+        Tuple of (invoice_results, target_month_str).
     """
+    artifacts = RunArtifacts(run_dir, str(bank_statement_path)) if run_dir else None
+
     # --- Phase 1: parse statement ---
-    transactions, ambiguous = parse_statement(
-        bank_statement_path
-    )
+    transactions = parse_statement(bank_statement_path)
+    if artifacts:
+        artifacts.save("01_transactions.json", transactions)
 
     if not transactions:
         logger.warning("No transactions parsed; returning empty results.")
-        return [], ambiguous, target_month or ""
+        return [], target_month or ""
 
     derived_month = target_month or _derive_target_month(transactions)
+    if artifacts:
+        artifacts.save_meta(derived_month)
+
     period_start, period_end = _analysis_window(derived_month)
     logger.info(
         "Target month: %s | Analysis window: %s → %s",
@@ -144,136 +230,106 @@ def run_pipeline(
         period_end,
     )
 
-    # --- Phase 2: build rules ---
-    rules = build_rules(transactions)
+    # --- Phase 2: build vendor rules ---
+    vendor_rules = build_vendor_rules(transactions)
+    if artifacts:
+        artifacts.save("02_rules.json", vendor_rules)
 
-    # --- Phase 3: fetch emails ---
-    emails = list_emails_with_attachments(period_start, period_end)
+    # --- Phase 3: fetch emails (server-side pre-filter) ---
+    query = build_gmail_query(vendor_rules, period_start, period_end)
+    emails = list_emails_with_attachments(query)
+    if artifacts:
+        artifacts.save("03_emails.json", emails)
     logger.info("Processing %d emails against %d transactions", len(emails), len(transactions))
 
-    # Pool of confirmed invoices: mapping from (email_id, filename) → (reading, email, local_path)
-    # Keyed to prevent double-claiming the same attachment.
-    invoice_pool: dict[tuple[str, str], tuple[AttachmentReading, EmailMatch, Path]] = {}
+    # --- Phase 4: amount lookup and sender→vendor mapping ---
+    amount_lookup = _build_amount_lookup(transactions)
+    amount_regex = _build_amount_regex(amount_lookup.keys())
+    sender_to_vendor = {kw: r.vendor for r in vendor_rules for kw in r.sender_keywords}
 
-    # Transactions directly matched by metadata rule: tx_vendor → (email_id, filename)
-    direct_matches: dict[str, tuple[str, str]] = {}
+    attachments_dir = (run_dir / "attachments") if run_dir else (settings.invoice_output_dir / "attachments")
 
-    # Precompute per-amount counts for early-exit check (B2)
-    tx_amount_counts: Counter[float] = Counter(tx.amount for tx in transactions)
+    claimed: set[int] = set()
+    found_results: dict[int, InvoiceResult] = {}
+    readings_log: list[dict] = []
 
+    # --- Phase 5: iterate emails and attachments ---
     for email in emails:
-        if not email.attachment_filenames:
-            continue
-
-        filename = email.attachment_filenames[0]
-        pool_key = (email.email_id, filename)
-
-        matched_rule = _find_matching_rule(email, rules)
-
-        if matched_rule:
-            # --- Metadata match: download and read ---
-            try:
-                local_path = download_attachment(email.email_id, filename, matched_rule.vendor)
-                reading = read_attachment(local_path)
-            except Exception as exc:
-                logger.warning("Failed processing attachment for %s: %s", matched_rule.vendor, exc)
-                continue
-
-            if reading.is_invoice:
-                invoice_pool[pool_key] = (reading, email, local_path)
-                direct_matches[matched_rule.vendor] = pool_key
-        else:
-            # --- Fallback: read attachment content for amount-based matching ---
-            try:
-                # We don't know the vendor yet; use a generic directory
-                local_path = download_attachment(email.email_id, filename, "unknown")
-                reading = read_attachment(local_path)
-            except Exception as exc:
-                logger.debug("Fallback download failed for email %s: %s", email.email_id, exc)
-                continue
-
-            if reading.is_invoice:
-                invoice_pool[pool_key] = (reading, email, local_path)
-
-        # Early exit: stop scanning when the pool already covers all transaction amounts
-        pool_amount_counts: Counter[float] = Counter(
-            r.amount for r, _, _ in invoice_pool.values() if r.amount is not None
-        )
-        if all(pool_amount_counts[a] >= n for a, n in tx_amount_counts.items()):
-            logger.info("All transaction amounts covered; stopping email scan early.")
+        if len(claimed) == len(transactions):
+            logger.info("All transactions matched; stopping email scan early.")
             break
 
-    # --- Phase 7: amount-based matching ---
-    # Group confirmed invoices by amount
-    amount_index: dict[float, list[tuple[str, str]]] = defaultdict(list)
-    for pool_key, (reading, _email, _path) in invoice_pool.items():
-        if reading.amount is not None:
-            amount_index[reading.amount].append(pool_key)
+        sender_lower = email.sender.lower()
+        candidate_vendor = next(
+            (v for kw, v in sender_to_vendor.items() if kw in sender_lower), None
+        )
 
-    results: list[InvoiceResult] = []
-    claimed: set[tuple[str, str]] = set()
+        for filename in email.attachment_filenames:
+            if not filename.lower().endswith(".pdf"):
+                continue
 
-    for tx in transactions:
-        try:
-            result = _match_transaction(tx, amount_index, invoice_pool, claimed)
-            results.append(result)
-        except Exception as exc:
-            logger.error("Unexpected error matching transaction %s: %s", tx.vendor, exc)
-            results.append(
-                InvoiceResult(
-                    transaction=tx,
-                    status="missing",
-                    failure_reason=FailureReason.LLM_CALL_FAILED,
-                    notes=str(exc),
-                )
+            try:
+                local_path = download_attachment(email.email_id, filename, attachments_dir)
+            except Exception as exc:
+                logger.warning("Failed to download %s from %s: %s", filename, email.email_id, exc)
+                continue
+
+            try:
+                text = extract_text(local_path)
+            except Exception as exc:
+                logger.warning("Failed to extract text from %s: %s", local_path, exc)
+                continue
+
+            hits = amount_regex.findall(text)
+            if not hits and not candidate_vendor:
+                # Only skip when there's no confirmed sender match — a vendor-matched email
+                # may invoice in a foreign currency whose amount won't appear in the bank statement.
+                logger.debug("No amount match in %s; skipping LLM", filename)
+                continue
+
+            try:
+                reading = read_attachment(local_path)
+            except Exception as exc:
+                logger.warning("LLM read failed for %s: %s", local_path, exc)
+                continue
+
+            readings_log.append({
+                "email_id": email.email_id,
+                "filename": filename,
+                "reading": reading.model_dump(mode="json"),
+            })
+
+            if not reading.is_invoice:
+                continue
+
+            tx_idx = _assign_to_transaction(
+                reading, hits, candidate_vendor, transactions, claimed, amount_lookup
             )
+            if tx_idx is not None:
+                claimed.add(tx_idx)
+                found_results[tx_idx] = InvoiceResult(
+                    transaction=transactions[tx_idx],
+                    email_id=email.email_id,
+                    attachment_path=local_path,
+                    status="found",
+                )
 
-    return results, ambiguous, derived_month
+    if artifacts:
+        artifacts.save("04_readings.json", readings_log)
 
+    # --- Phase 6: assemble final results ---
+    results: list[InvoiceResult] = []
+    for idx, tx in enumerate(transactions):
+        if idx in found_results:
+            results.append(found_results[idx])
+        else:
+            results.append(InvoiceResult(
+                transaction=tx,
+                status="missing",
+                failure_reason=FailureReason.AMOUNT_MISMATCH,
+            ))
 
-def _match_transaction(
-    tx: Transaction,
-    amount_index: dict[float, list[tuple[str, str]]],
-    invoice_pool: dict[tuple[str, str], tuple[AttachmentReading, EmailMatch, Path]],
-    claimed: set[tuple[str, str]],
-) -> InvoiceResult:
-    """Match a single transaction against the invoice pool."""
-    candidates = [k for k in amount_index.get(tx.amount, []) if k not in claimed]
+    if artifacts:
+        artifacts.save("05_results.json", results)
 
-    if not candidates:
-        return InvoiceResult(
-            transaction=tx,
-            status="missing",
-            failure_reason=FailureReason.AMOUNT_MISMATCH,
-        )
-
-    if len(candidates) == 1:
-        pool_key = candidates[0]
-        _reading, email, local_path = invoice_pool[pool_key]
-        claimed.add(pool_key)
-        return InvoiceResult(
-            transaction=tx,
-            email_id=email.email_id,
-            attachment_path=local_path,
-            status="found",
-        )
-
-    # Multiple candidates — try vendor tiebreak
-    vendor_matches = [k for k in candidates if _vendor_match(tx.vendor, invoice_pool[k][0].vendor)]
-
-    if len(vendor_matches) == 1:
-        pool_key = vendor_matches[0]
-        _reading, email, local_path = invoice_pool[pool_key]
-        claimed.add(pool_key)
-        return InvoiceResult(
-            transaction=tx,
-            email_id=email.email_id,
-            attachment_path=local_path,
-            status="found",
-        )
-
-    return InvoiceResult(
-        transaction=tx,
-        status="missing",
-        failure_reason=FailureReason.DUPLICATE_AMOUNT_VENDOR_MISMATCH,
-    )
+    return results, derived_month

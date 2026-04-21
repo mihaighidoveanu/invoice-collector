@@ -14,8 +14,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+from agent.rule_builder import INVOICE_INDICATOR_KEYWORDS
 from config import settings
-from models import EmailMatch
+from models import EmailMatch, VendorRule
 
 logger = logging.getLogger(__name__)
 
@@ -58,28 +59,64 @@ def _build_service():
 # ---------------------------------------------------------------------------
 
 
-def list_emails_with_attachments(after: date, before: date) -> list[EmailMatch]:
-    """Fetch metadata for all emails with attachments in the given date range.
+def build_gmail_query(vendor_rules: list[VendorRule], start: date, end: date) -> str:
+    """Compose a Gmail server-side query combining sender, keyword, and date filters.
 
     Args:
-        after: Start of the range (inclusive), formatted as YYYY/MM/DD in the query.
-        before: End of the range (exclusive), formatted as YYYY/MM/DD in the query.
+        vendor_rules: Per-vendor rules providing sender keyword tokens.
+        start: Start of the date range (inclusive).
+        end: End of the date range (exclusive).
+
+    Returns:
+        Gmail query string.
+    """
+    date_clause = (
+        f"after:{start.strftime('%Y/%m/%d')} before:{end.strftime('%Y/%m/%d')}"
+    )
+
+    sender_tokens: list[str] = []
+    for rule in vendor_rules:
+        sender_tokens.extend(rule.sender_keywords)
+    # Deduplicate while preserving order
+    seen: set[str] = set()
+    unique_tokens: list[str] = []
+    for t in sender_tokens:
+        if t not in seen:
+            seen.add(t)
+            unique_tokens.append(t)
+
+    from_clause = ""
+    if unique_tokens:
+        from_parts = " OR ".join(f"from:{t}" for t in unique_tokens)
+        from_clause = f" ({from_parts})"
+
+    query = f"has:attachment filename:pdf {date_clause}{from_clause}"
+    return query
+
+
+def list_emails_with_attachments(query: str) -> list[EmailMatch]:
+    """Fetch metadata for all emails matching the given Gmail query.
+
+    Args:
+        query: Pre-built Gmail search query string.
 
     Returns:
         List of EmailMatch objects with metadata only (no downloads).
     """
-    query = (
-        f"has:attachment after:{after.strftime('%Y/%m/%d')} "
-        f"before:{before.strftime('%Y/%m/%d')}"
-    )
     logger.info("Gmail query: %s", query)
 
     service = _build_service()
     matches: list[EmailMatch] = []
 
     try:
+        messages = []
         response = service.users().messages().list(userId="me", q=query).execute()
-        messages = response.get("messages", [])
+        messages.extend(response.get("messages", []))
+        while "nextPageToken" in response:
+            response = service.users().messages().list(
+                userId="me", q=query, pageToken=response["nextPageToken"]
+            ).execute()
+            messages.extend(response.get("messages", []))
 
         for msg_stub in messages:
             msg_id = msg_stub["id"]
@@ -87,7 +124,7 @@ def list_emails_with_attachments(after: date, before: date) -> list[EmailMatch]:
                 msg = (
                     service.users()
                     .messages()
-                    .get(userId="me", id=msg_id, format="metadata")
+                    .get(userId="me", id=msg_id, format="full")
                     .execute()
                 )
                 match = _parse_message_metadata(msg)
@@ -103,17 +140,20 @@ def list_emails_with_attachments(after: date, before: date) -> list[EmailMatch]:
     return matches
 
 
-def download_attachment(email_id: str, filename: str, vendor: str) -> Path:
-    """Download a specific attachment and save it under the vendor's directory.
+def download_attachment(email_id: str, filename: str, dest_dir: Path) -> Path:
+    """Download a PDF attachment and save it to dest_dir.
 
     Args:
         email_id: Gmail message ID.
-        filename: Attachment filename to download.
-        vendor: Vendor name used to determine the output subdirectory.
+        filename: Attachment filename to download (must be a PDF).
+        dest_dir: Directory where the attachment will be saved.
 
     Returns:
         Local path where the attachment was saved.
     """
+    if not filename.lower().endswith(".pdf"):
+        raise ValueError(f"Only PDF attachments are supported; got '{filename}'")
+
     service = _build_service()
 
     msg = service.users().messages().get(userId="me", id=email_id, format="full").execute()
@@ -132,10 +172,8 @@ def download_attachment(email_id: str, filename: str, vendor: str) -> Path:
 
     data = base64.urlsafe_b64decode(attachment["data"])
 
-    vendor_dir = settings.invoice_output_dir / _sanitize_dirname(vendor)
-    vendor_dir.mkdir(parents=True, exist_ok=True)
-
-    dest = vendor_dir / filename
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / filename
     dest.write_bytes(data)
     logger.info("Downloaded attachment to %s", dest)
     return dest

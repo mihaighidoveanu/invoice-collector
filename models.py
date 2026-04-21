@@ -9,16 +9,13 @@ from pydantic import BaseModel
 class Transaction(BaseModel):
     vendor: str
     amount: float
-    currency: str
     date: date
     raw_description: str
 
 
-class SearchRule(BaseModel):
+class VendorRule(BaseModel):
     vendor: str
-    subject_keywords: list[str]
-    body_keywords: list[str]
-    attachment_filename_keywords: list[str]
+    sender_keywords: list[str]
 
 
 class EmailMatch(BaseModel):
@@ -36,12 +33,6 @@ class AttachmentReading(BaseModel):
     amount: float | None = None
     invoice_date: date | None = None
     confidence: float | None = None
-
-
-class AmbiguousNormalization(BaseModel):
-    raw_description: str
-    normalized_name: str
-    confidence_note: str
 
 
 class FailureReason(str, Enum):

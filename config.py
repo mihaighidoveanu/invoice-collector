@@ -7,9 +7,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     # LLM
-    aws_region: str = "eu-central-1"
-    llm_model_name: str = "eu.amazon.nova-micro-v1:0"
-    llm_max_retries: int = 3
+    anthropic_api_key: str = ""
+    llm_model_name: str = "claude-haiku-4-5-20251001"
+    llm_max_tokens: int = 8192
+    llm_max_retries: int = 2
     llm_retry_wait_min: float = 1.0
     llm_retry_wait_max: float = 10.0
 

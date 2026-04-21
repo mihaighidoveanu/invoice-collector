@@ -1,6 +1,6 @@
 # invoice-collector
 
-A FastAPI service that collects monthly invoices from Gmail using a bank statement as the source of truth. Given a bank statement PDF, the agent identifies all vendors and amounts for the target month, generates Gmail search rules per vendor, searches Gmail for matching invoices, downloads and saves them locally, and produces an Excel report for the accountant.
+Collects monthly invoices from Gmail using a bank statement as the source of truth. Given a bank statement PDF, the agent extracts all vendors and amounts for the target month, searches Gmail for matching invoices, downloads them locally, and produces an Excel report for the accountant.
 
 ---
 
@@ -10,7 +10,6 @@ A FastAPI service that collects monthly invoices from Gmail using a bank stateme
 
 ```bash
 uv venv --python 3.11
-source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
@@ -32,17 +31,23 @@ The first time the pipeline runs, a browser window will open asking you to autho
 
 ---
 
-## Running the server
-
-```bash
-uvicorn main:app --reload
-```
-
----
-
 ## Running the pipeline
 
-Upload a bank statement PDF:
+### CLI (primary)
+
+```bash
+.venv/bin/python cli.py /path/to/statement.pdf
+```
+
+Output is written to `invoices/runs/{timestamp}/`.
+
+### FastAPI server
+
+```bash
+.venv/bin/uvicorn main:app --reload
+```
+
+Then upload a bank statement:
 
 ```bash
 curl -X POST http://localhost:8000/run \
@@ -55,51 +60,37 @@ Or use the slash command inside Claude Code:
 /run-pipeline /path/to/statement.pdf
 ```
 
-Response:
-
-```json
-{
-  "status": "ok",
-  "invoices_found": 12,
-  "invoices_missing": 2,
-  "report_path": "invoices/report_2025-03.xlsx",
-  "invoice_dir": "invoices/"
-}
-```
-
----
-
-## Exporting Excel manually
-
-If you already have a JSON report and want to re-export it:
-
-```bash
-python tools/export_excel.py invoices/report_2025-03.json
-```
-
 ---
 
 ## Running tests
 
+**Unit tests** — no external dependencies:
+
 ```bash
-pytest tests/ -v --tb=short
+.venv/bin/python -m pytest tests/unit -v --tb=short
 ```
 
-Or use the slash command inside Claude Code:
+Or via Claude Code slash command: `/unit-test`
 
+**Integration tests** — require live Gmail and Anthropic credentials:
+
+```bash
+.venv/bin/python -m pytest tests/integration/test_integrations.py::test_gmail_connection -v --tb=short
+.venv/bin/python -m pytest tests/integration/test_integrations.py::test_llm_connection -v --tb=short
 ```
-/test-all
-```
+
+Or via Claude Code slash commands: `/test-gmail`, `/test-llm`
 
 ---
 
 ## Output files
 
-All output lands in `invoices/`:
+Each pipeline run creates a timestamped directory under `invoices/runs/`:
 
 | File | Description |
 |------|-------------|
-| `invoices/{Vendor}/invoice.pdf` | Downloaded attachment per vendor |
-| `invoices/report_2025-03.json` | Machine-readable pipeline report |
-| `invoices/report_2025-03.xlsx` | Excel report for the accountant |
-| `invoices/pipeline_2025-03.log` | Per-run log |
+| `invoices/runs/{ts}/{Vendor}/` | Downloaded attachments per vendor |
+| `invoices/runs/{ts}/report.json` | Machine-readable pipeline report |
+| `invoices/runs/{ts}/report.xlsx` | Excel report for the accountant |
+| `invoices/runs/{ts}/pipeline.log` | Per-run log |
+| `invoices/runs/{ts}/meta.json` | Run metadata (timestamp, month, statement path) |

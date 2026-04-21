@@ -2,6 +2,7 @@
 
 import base64
 from datetime import date
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,10 +11,12 @@ from agent.gmail_tools import (
     _extract_attachment_filenames,
     _parse_message_metadata,
     _sanitize_dirname,
+    build_gmail_query,
     download_attachment,
     list_emails_with_attachments,
 )
-from models import EmailMatch
+from models import EmailMatch, VendorRule
+
 
 # ---------------------------------------------------------------------------
 # Helpers to build fake Gmail API payloads
@@ -122,6 +125,51 @@ def test_sanitize_dirname_special_chars_replaced():
 
 
 # ---------------------------------------------------------------------------
+# build_gmail_query
+# ---------------------------------------------------------------------------
+
+
+def test_build_gmail_query_contains_date_range():
+    rules = [VendorRule(vendor="Amazon", sender_keywords=["amazon"])]
+    q = build_gmail_query(rules, date(2025, 3, 1), date(2025, 4, 6))
+    assert "after:2025/03/01" in q
+    assert "before:2025/04/06" in q
+
+
+def test_build_gmail_query_contains_sender_keywords():
+    rules = [
+        VendorRule(vendor="Amazon", sender_keywords=["amazon"]),
+        VendorRule(vendor="Google", sender_keywords=["google"]),
+    ]
+    q = build_gmail_query(rules, date(2025, 3, 1), date(2025, 4, 6))
+    assert "from:amazon" in q
+    assert "from:google" in q
+
+
+def test_build_gmail_query_contains_invoice_keywords():
+    rules = [VendorRule(vendor="Amazon", sender_keywords=["amazon"])]
+    q = build_gmail_query(rules, date(2025, 3, 1), date(2025, 4, 6))
+    assert "invoice" in q
+    assert "factura" in q
+
+
+def test_build_gmail_query_has_attachment_and_pdf():
+    rules = []
+    q = build_gmail_query(rules, date(2025, 3, 1), date(2025, 4, 6))
+    assert "has:attachment" in q
+    assert "filename:pdf" in q
+
+
+def test_build_gmail_query_deduplicates_sender_tokens():
+    rules = [
+        VendorRule(vendor="Amazon", sender_keywords=["amazon"]),
+        VendorRule(vendor="Amazon Prime", sender_keywords=["amazon"]),
+    ]
+    q = build_gmail_query(rules, date(2025, 3, 1), date(2025, 4, 6))
+    assert q.count("from:amazon") == 1
+
+
+# ---------------------------------------------------------------------------
 # list_emails_with_attachments
 # ---------------------------------------------------------------------------
 
@@ -135,7 +183,7 @@ def test_list_emails_returns_matches(mock_build_service):
     service.users().messages().list().execute.return_value = list_resp
     service.users().messages().get().execute.return_value = _make_msg(msg_id="msg1")
 
-    results = list_emails_with_attachments(date(2025, 3, 1), date(2025, 4, 1))
+    results = list_emails_with_attachments("has:attachment filename:pdf after:2025/03/01")
 
     assert len(results) == 1
     assert results[0].email_id == "msg1"
@@ -147,7 +195,7 @@ def test_list_emails_no_messages_returns_empty(mock_build_service):
     mock_build_service.return_value = service
     service.users().messages().list().execute.return_value = {}
 
-    results = list_emails_with_attachments(date(2025, 3, 1), date(2025, 4, 1))
+    results = list_emails_with_attachments("has:attachment filename:pdf after:2025/03/01")
     assert results == []
 
 
@@ -169,11 +217,7 @@ def test_download_attachment_writes_file(mock_build_service, tmp_path):
     )
     service.users().messages().attachments().get().execute.return_value = {"data": encoded}
 
-    with patch("agent.gmail_tools.settings") as mock_settings:
-        mock_settings.invoice_output_dir = tmp_path
-        mock_settings.gmail_scopes_list = ["https://www.googleapis.com/auth/gmail.readonly"]
-
-        dest = download_attachment("msg1", "invoice.pdf", "Acme")
+    dest = download_attachment("msg1", "invoice.pdf", tmp_path)
 
     assert dest.exists()
     assert dest.read_bytes() == fake_data
@@ -189,4 +233,9 @@ def test_download_attachment_missing_filename_raises(mock_build_service):
     )
 
     with pytest.raises(ValueError, match="not found"):
-        download_attachment("msg1", "invoice.pdf", "Acme")
+        download_attachment("msg1", "invoice.pdf", Path("/tmp"))
+
+
+def test_download_attachment_non_pdf_raises():
+    with pytest.raises(ValueError, match="Only PDF"):
+        download_attachment("msg1", "document.docx", Path("/tmp"))

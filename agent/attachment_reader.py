@@ -9,10 +9,10 @@ import logging
 from datetime import date
 from pathlib import Path
 
-import pdfplumber
-from langchain_aws import ChatBedrockConverse
+from langchain_anthropic import ChatAnthropic
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from agent.pdf_utils import extract_text as _extract_text
 from config import settings
 from models import AttachmentReading
 
@@ -21,13 +21,17 @@ logger = logging.getLogger(__name__)
 _MIN_TEXT_LENGTH = 50
 
 _INVOICE_PROMPT = """\
-You are an invoice detector. Given the text of a PDF, determine whether it is an invoice.
+You are an accounting document detector. Given the text of a PDF, determine whether it is \
+a financial supporting document for bookkeeping — this includes invoices (factura), receipts, \
+payment orders (ordin de plata), salary payment statements (stat de plata salarii), or any \
+official document that records a monetary transaction or obligation.
 
-If it IS an invoice, respond with JSON:
-{{"is_invoice": true, "vendor": "<vendor name>", "amount": <float>,
+If it IS such a document, respond with JSON:
+{{"is_invoice": true, "vendor": "<payer or payee name>", "amount": <float — the primary amount paid or owed>,
 "date": "<YYYY-MM-DD>", "confidence": <0.0-1.0>}}
 
-If it is NOT an invoice, respond with JSON:
+If it is NOT a financial document (e.g. attendance sheet / pontaj, cover letter, informational report), \
+respond with JSON:
 {{"is_invoice": false}}
 
 Return ONLY the JSON object, no prose.
@@ -37,24 +41,14 @@ PDF text:
 """
 
 
-def _build_llm() -> ChatBedrockConverse:
-    return ChatBedrockConverse(
+def _build_llm() -> ChatAnthropic:
+    return ChatAnthropic(
         model=settings.llm_model_name,
-        region_name=settings.aws_region,
+        api_key=settings.anthropic_api_key,
     )
 
 
-def _extract_text(pdf_path: Path) -> str:
-    text_parts: list[str] = []
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text_parts.append(page_text)
-    return "\n".join(text_parts)
-
-
-def _call_llm(text: str, llm: ChatBedrockConverse) -> str:
+def _call_llm(text: str, llm: ChatAnthropic) -> str:
     prompt = _INVOICE_PROMPT.format(text=text)
     response = llm.invoke(prompt)
     return str(response.content)

@@ -15,7 +15,7 @@ from agent.statement_parser import _build_llm
 
 
 def test_llm_connection() -> None:
-    """Verify AWS Bedrock LLM is reachable and responds to a minimal prompt."""
+    """Verify Anthropic LLM is reachable and responds to a minimal prompt."""
     llm = _build_llm()
 
     # Minimal test: ask it to echo a word back.
